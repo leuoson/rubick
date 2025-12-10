@@ -102,6 +102,23 @@ export default {
         database: {
           title: '多端数据同步',
         },
+        ai: {
+          title: 'AI 设置',
+          providers: 'AI 提供商',
+          addProvider: '添加提供商',
+          editProvider: '编辑提供商',
+          deleteConfirm: '确定删除此提供商吗？',
+          providerName: '提供商名称',
+          providerNamePlaceholder: '例如: OpenAI、Claude',
+          providerType: '提供商类型',
+          models: '可用模型',
+          modelsPlaceholder: '输入模型名称后按回车添加',
+          defaultSettings: '默认设置',
+          defaultProvider: '默认提供商',
+          defaultModel: '默认模型',
+          saved: '配置已保存',
+          fillRequired: '请填写必填项',
+        },
       },
       dev: {
         title: '开发者',

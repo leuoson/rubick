@@ -1,5 +1,5 @@
 export default {
-  version: 7,
+  version: 8,
   perf: {
     custom: {
       theme: 'SPRING',
@@ -11,6 +11,11 @@ export default {
       logo: `file://${__static}/logo.png`,
       placeholder: '你好，Rubick！请输入插件关键词',
       username: 'Rubick',
+    },
+    ai: {
+      providers: [],
+      defaultProviderId: '',
+      defaultModel: '',
     },
     shortCut: {
       showAndHidden: 'Option+R',

@@ -207,6 +207,67 @@ window.rubick = {
     return ipcSend('removePlugin');
   },
 
+  // ==================== AI API ====================
+  ai: {
+    /**
+     * 获取可用的 AI 提供商列表（不含 API Key）
+     * @returns {Array<{id: string, name: string, type: string, models: string[], enabled: boolean}>}
+     */
+    getProviders: () => ipcSendSync('getAIProviders'),
+
+    /**
+     * 获取默认的 AI 提供商和模型配置
+     * @returns {{providerId: string, model: string}}
+     */
+    getDefaultConfig: () => ipcSendSync('getAIDefaultConfig'),
+
+    /**
+     * 发起 AI 聊天请求（同步，非流式）
+     * @param {Object} options
+     * @param {string} options.providerId - AI 提供商 ID
+     * @param {string} options.model - 模型名称
+     * @param {Array<{role: 'system'|'user'|'assistant', content: string}>} options.messages - 消息列表
+     * @param {number} [options.temperature] - 温度参数
+     * @param {number} [options.maxTokens] - 最大 token 数
+     * @returns {{success: boolean, content?: string, error?: string, usage?: Object}}
+     */
+    chat: (options) => ipcSendSync('aiChat', options),
+
+    /**
+     * 发起 AI 流式聊天请求
+     * @param {Object} options - 同 chat 方法参数
+     * @param {Function} onEvent - 事件回调函数 ({type, content?, error?}) => void
+     *   type: 'start' | 'delta' | 'done' | 'error'
+     * @returns {Function} 取消订阅函数
+     */
+    chatStream: (options, onEvent) => {
+      const result = ipcSendSync('aiChatStream', options);
+      const requestId = result.requestId;
+
+      const handler = (event, data) => {
+        if (data.requestId === requestId) {
+          onEvent({
+            type: data.type,
+            content: data.content,
+            error: data.error,
+          });
+
+          // 完成或错误时自动清理监听器
+          if (data.type === 'done' || data.type === 'error') {
+            ipcRenderer.removeListener('ai-stream-event', handler);
+          }
+        }
+      };
+
+      ipcRenderer.on('ai-stream-event', handler);
+
+      // 返回取消订阅函数
+      return () => {
+        ipcRenderer.removeListener('ai-stream-event', handler);
+      };
+    },
+  },
+
   createBrowserWindow: (url, options, callback) => {
     const winUrl = path.resolve(baseDir, 'node_modules', options.name);
     const winIndex = `file://${path.join(winUrl, './', url || '')}`;

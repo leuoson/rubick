@@ -27,6 +27,9 @@
         <a-menu-item key="localhost">
           {{ $t('feature.settings.intranet.title') }}
         </a-menu-item>
+        <a-menu-item key="ai">
+          {{ $t('feature.settings.ai.title') }}
+        </a-menu-item>
       </a-menu>
       <div class="settings-detail">
         <UserInfo v-if="currentSelect[0] === 'userInfo'" />
@@ -225,6 +228,7 @@
         <Localhost v-if="currentSelect[0] === 'localhost'" />
         <LocalStart v-if="currentSelect[0] === 'localstart'" />
         <DataBase v-if="currentSelect[0] === 'database'" />
+        <AISettings v-if="currentSelect[0] === 'ai'" />
       </div>
     </div>
   </div>
@@ -248,6 +252,7 @@ import Localhost from './localhost.vue';
 import UserInfo from './user-info';
 import LocalStart from './local-start';
 import DataBase from './database';
+import AISettings from './ai-settings.vue';
 import { useI18n } from 'vue-i18n';
 import localConfig from '@/confOp';
 

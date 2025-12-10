@@ -104,6 +104,23 @@ export default {
         database: {
           title: 'Data Synchronization',
         },
+        ai: {
+          title: 'AI Settings',
+          providers: 'AI Providers',
+          addProvider: 'Add Provider',
+          editProvider: 'Edit Provider',
+          deleteConfirm: 'Are you sure to delete this provider?',
+          providerName: 'Provider Name',
+          providerNamePlaceholder: 'e.g. OpenAI, Claude',
+          providerType: 'Provider Type',
+          models: 'Available Models',
+          modelsPlaceholder: 'Type model name and press Enter to add',
+          defaultSettings: 'Default Settings',
+          defaultProvider: 'Default Provider',
+          defaultModel: 'Default Model',
+          saved: 'Configuration saved',
+          fillRequired: 'Please fill in required fields',
+        },
       },
       dev: {
         title: 'Developer',

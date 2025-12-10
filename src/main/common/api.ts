@@ -24,6 +24,7 @@ import common from '@/common/utils/commonConst';
 import mainInstance from '../index';
 import { runner, detach } from '../browsers';
 import DBInstance from './db';
+import { aiService, AIChatRequest, AIProviderInfo } from './ai';
 import getWinPosition from './getWinPosition';
 import path from 'path';
 import commonConst from '@/common/utils/commonConst';
@@ -435,6 +436,66 @@ class API extends DBInstance {
         plugin,
       })})`
     );
+  }
+
+  // ==================== AI 相关 IPC 方法 ====================
+
+  /**
+   * 获取 AI 提供商列表（不含 API Key，安全暴露给插件）
+   */
+  public async getAIProviders(): Promise<AIProviderInfo[]> {
+    return await aiService.getProviders();
+  }
+
+  /**
+   * 获取默认 AI 提供商和模型配置
+   */
+  public async getAIDefaultConfig(): Promise<{
+    providerId: string;
+    model: string;
+  }> {
+    return await aiService.getDefaultConfig();
+  }
+
+  /**
+   * AI 聊天调用（同步，非流式）
+   * 插件传入提供商ID、模型、消息，由 rubick 代理调用
+   */
+  public async aiChat({ data }: { data: AIChatRequest }) {
+    return await aiService.chat(data);
+  }
+
+  /**
+   * AI 流式聊天调用
+   * 通过事件推送流式响应给插件
+   */
+  public async aiChatStream(
+    { data }: { data: AIChatRequest },
+    window,
+    event
+  ) {
+    const requestId = Date.now().toString(36) + Math.random().toString(36);
+
+    // 异步处理流式响应
+    (async () => {
+      try {
+        for await (const chunk of aiService.chatStream(data)) {
+          // 通过事件推送给渲染进程
+          event.sender.send('ai-stream-event', {
+            requestId,
+            ...chunk,
+          });
+        }
+      } catch (error) {
+        event.sender.send('ai-stream-event', {
+          requestId,
+          type: 'error',
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    })();
+
+    return { requestId };
   }
 }
 
