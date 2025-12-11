@@ -3177,7 +3177,7 @@ const getRelativePath = (indexPath) => {
 const getPluginPreloadPath = (plugin, pluginIndexPath) => {
   const { name, preload, tplPath, indexPath } = plugin;
   if (!preload) return;
-  if (commonConst.dev()) {
+  if (isDev()) {
     if (name === "rubick-system-feature") {
       return resolveStatic("feature/public/preload.js");
     }
@@ -3231,13 +3231,13 @@ const runner = () => {
     } = plugin;
     let pluginIndexPath = tplPath || indexPath;
     let preloadPath;
-    if (commonConst.dev() && development) {
+    if (isDev() && development) {
       pluginIndexPath = development;
       const pluginPath = path$h.resolve(PLUGIN_INSTALL_DIR, "node_modules", name);
       preloadPath = `file://${path$h.join(pluginPath, "./", main2)}`;
     }
     if (plugin.name === "rubick-system-feature" && !pluginIndexPath) {
-      pluginIndexPath = commonConst.dev() ? "http://localhost:8081/#/" : `file://${resolveStatic("feature/index.html")}`;
+      pluginIndexPath = `file://${resolveStatic("feature/index.html")}`;
     }
     if (!pluginIndexPath) {
       const pluginPath = path$h.resolve(PLUGIN_INSTALL_DIR, "node_modules", name);
@@ -13345,11 +13345,11 @@ class API extends DBInstance {
     window2.setSize(window2.getSize()[0], 60);
     this.removePlugin(null, window2);
     if (!plugin.main) {
-      plugin.tplPath = commonConst.dev() ? "http://localhost:8083/#/" : `file://${resolveStatic("tpl/index.html")}`;
+      plugin.tplPath = `file://${resolveStatic("tpl/index.html")}`;
     }
     if (plugin.name === "rubick-system-feature") {
       plugin.logo = plugin.logo || `file://${resolveStatic("logo.png")}`;
-      plugin.indexPath = commonConst.dev() ? "http://localhost:8081/#/" : `file://${resolveStatic("feature/index.html")}`;
+      plugin.indexPath = `file://${resolveStatic("feature/index.html")}`;
     } else if (!plugin.indexPath) {
       const pluginPath = path$h.resolve(PLUGIN_INSTALL_DIR, "node_modules", plugin.name);
       plugin.indexPath = `file://${path$h.join(
@@ -14001,17 +14001,11 @@ global.LOCAL_PLUGINS = {
     }
   },
   addPlugin(plugin) {
-    let has = false;
     const currentPlugins = global.LOCAL_PLUGINS.getLocalPlugins();
-    currentPlugins.some((p) => {
-      has = p.name === plugin.name;
-      return has;
-    });
-    if (!has) {
-      currentPlugins.unshift(plugin);
-      global.LOCAL_PLUGINS.PLUGINS = currentPlugins;
-      fs$l.writeFileSync(configPath, JSON.stringify(currentPlugins));
-    }
+    const filteredPlugins = currentPlugins.filter((p) => p.name !== plugin.name);
+    filteredPlugins.unshift(plugin);
+    global.LOCAL_PLUGINS.PLUGINS = filteredPlugins;
+    fs$l.writeFileSync(configPath, JSON.stringify(filteredPlugins));
   },
   updatePlugin(plugin) {
     global.LOCAL_PLUGINS.PLUGINS = global.LOCAL_PLUGINS.PLUGINS.map(

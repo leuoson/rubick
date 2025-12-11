@@ -86,17 +86,12 @@ global.LOCAL_PLUGINS = {
     }
   },
   addPlugin(plugin) {
-    let has = false;
     const currentPlugins = global.LOCAL_PLUGINS.getLocalPlugins();
-    currentPlugins.some((p) => {
-      has = p.name === plugin.name;
-      return has;
-    });
-    if (!has) {
-      currentPlugins.unshift(plugin);
-      global.LOCAL_PLUGINS.PLUGINS = currentPlugins;
-      fs.writeFileSync(configPath, JSON.stringify(currentPlugins));
-    }
+    // 先移除同名插件，再添加新的（避免重复）
+    const filteredPlugins = currentPlugins.filter((p) => p.name !== plugin.name);
+    filteredPlugins.unshift(plugin);
+    global.LOCAL_PLUGINS.PLUGINS = filteredPlugins;
+    fs.writeFileSync(configPath, JSON.stringify(filteredPlugins));
   },
   updatePlugin(plugin) {
     global.LOCAL_PLUGINS.PLUGINS = global.LOCAL_PLUGINS.PLUGINS.map(

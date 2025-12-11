@@ -1,5 +1,4 @@
 import { toRaw } from 'vue';
-import commonConst from '@/common/utils/commonConst';
 
 // 使用 preload 暴露的 window 对象
 const path = window.nodePath;
@@ -21,17 +20,13 @@ export default function pluginClickEvent({
     feature: fe,
     ext,
   };
-  // 模板文件
+  // 模板文件 - 使用静态文件
   if (!plugin.main) {
-    pluginDist.tplPath = commonConst.dev()
-      ? 'http://localhost:8083/#/'
-      : `file://${window.__static}/tpl/index.html`;
+    pluginDist.tplPath = `file://${window.__static}/tpl/index.html`;
   }
-  // 插件市场
+  // 插件市场 - 使用静态文件
   if (plugin.name === 'rubick-system-feature') {
-    pluginDist.indexPath = commonConst.dev()
-      ? 'http://localhost:8081/#/'
-      : `file://${window.__static}/feature/index.html`;
+    pluginDist.indexPath = `file://${window.__static}/feature/index.html`;
   }
   openPlugin(pluginDist, option);
 }

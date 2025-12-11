@@ -8,7 +8,7 @@ import {
   WINDOW_PLUGIN_HEIGHT,
   WINDOW_WIDTH,
 } from '@/common/constans/common';
-import { getPreloadPath as getMainPreloadPath, resolveStatic } from '@/main/common/static';
+import { getPreloadPath as getMainPreloadPath, resolveStatic, isDev } from '@/main/common/static';
 
 const getRelativePath = (indexPath) => {
   return commonConst.windows()
@@ -19,7 +19,7 @@ const getRelativePath = (indexPath) => {
 const getPluginPreloadPath = (plugin, pluginIndexPath) => {
   const { name, preload, tplPath, indexPath } = plugin;
   if (!preload) return;
-  if (commonConst.dev()) {
+  if (isDev()) {
     if (name === 'rubick-system-feature') {
       return resolveStatic('feature/public/preload.js');
     }
@@ -113,16 +113,14 @@ export default () => {
     let preloadPath;
     let darkMode;
     // 开发环境
-    if (commonConst.dev() && development) {
+    if (isDev() && development) {
       pluginIndexPath = development;
       const pluginPath = path.resolve(baseDir, 'node_modules', name);
       preloadPath = `file://${path.join(pluginPath, './', main)}`;
     }
-    // 再尝试去找
+    // 系统插件使用静态文件（避免依赖子项目服务）
     if (plugin.name === 'rubick-system-feature' && !pluginIndexPath) {
-      pluginIndexPath = commonConst.dev()
-        ? 'http://localhost:8081/#/'
-        : `file://${resolveStatic('feature/index.html')}`;
+      pluginIndexPath = `file://${resolveStatic('feature/index.html')}`;
     }
     if (!pluginIndexPath) {
       const pluginPath = path.resolve(baseDir, 'node_modules', name);

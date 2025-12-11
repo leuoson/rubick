@@ -43,7 +43,26 @@ const createPluginManager = (): any => {
   const initPluginHistory = () => {
     const result = window.rubick.db.get(PLUGIN_HISTORY) || {};
     if (result && result.data) {
-      state.pluginHistory = result.data;
+      // 去重并更新系统插件的 indexPath
+      const seen = new Set();
+      state.pluginHistory = result.data
+        .map((plugin) => {
+          // 更新系统插件的 indexPath 为最新路径
+          if (plugin.name === 'rubick-system-feature' || plugin.originName === 'rubick-system-feature') {
+            return {
+              ...plugin,
+              indexPath: `file://${window.__static}/feature/index.html`,
+            };
+          }
+          return plugin;
+        })
+        .filter((plugin) => {
+          // 根据 name + feature.code 去重
+          const key = `${plugin.originName || plugin.name}-${plugin.feature?.code || ''}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
     }
   };
 
@@ -186,9 +205,7 @@ const createPluginManager = (): any => {
     return {
       ...pluginInfo,
       icon: pluginInfo.logo,
-      indexPath: commonConst.dev()
-        ? 'http://localhost:8081/#/'
-        : `file://${path.join(pluginPath, '../', pluginInfo.main)}`,
+      indexPath: `file://${path.join(pluginPath, '../', pluginInfo.main)}`,
     };
   };
 

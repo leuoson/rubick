@@ -19,7 +19,7 @@ import {
   PLUGIN_INSTALL_DIR as baseDir,
 } from '@/common/constans/main';
 import { putFileToRubick } from './getSearchFiles';
-import { resolveStatic } from '@/main/common/static';
+import { resolveStatic, isDev } from '@/main/common/static';
 import getCopyFiles from '@/common/utils/getCopyFiles';
 import common from '@/common/utils/commonConst';
 
@@ -133,18 +133,14 @@ class API extends DBInstance {
     }
     window.setSize(window.getSize()[0], 60);
     this.removePlugin(null, window);
-    // 模板文件
+    // 模板文件 - 使用静态文件
     if (!plugin.main) {
-      plugin.tplPath = common.dev()
-        ? 'http://localhost:8083/#/'
-        : `file://${resolveStatic('tpl/index.html')}`;
+      plugin.tplPath = `file://${resolveStatic('tpl/index.html')}`;
     }
     if (plugin.name === 'rubick-system-feature') {
       plugin.logo =
         plugin.logo || `file://${resolveStatic('logo.png')}`;
-      plugin.indexPath = commonConst.dev()
-        ? 'http://localhost:8081/#/'
-        : `file://${resolveStatic('feature/index.html')}`;
+      plugin.indexPath = `file://${resolveStatic('feature/index.html')}`;
     } else if (!plugin.indexPath) {
       const pluginPath = path.resolve(baseDir, 'node_modules', plugin.name);
       plugin.indexPath = `file://${path.join(
