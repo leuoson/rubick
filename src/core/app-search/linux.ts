@@ -4,7 +4,7 @@ import originfs from "original-fs";
 const app_paths = [
   "/usr/share/applications",
   "/var/lib/snapd/desktop/applications",
-  `${window.process.env.HOME}/.local/share/applications`,
+  `${process.env.HOME}/.local/share/applications`,
 ];
 const emptyIcon = "";
 

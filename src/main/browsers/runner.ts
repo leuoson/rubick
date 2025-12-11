@@ -8,6 +8,7 @@ import {
   WINDOW_PLUGIN_HEIGHT,
   WINDOW_WIDTH,
 } from '@/common/constans/common';
+import { getPreloadPath as getMainPreloadPath, resolveStatic } from '@/main/common/static';
 
 const getRelativePath = (indexPath) => {
   return commonConst.windows()
@@ -15,12 +16,12 @@ const getRelativePath = (indexPath) => {
     : indexPath.replace('file:', '');
 };
 
-const getPreloadPath = (plugin, pluginIndexPath) => {
+const getPluginPreloadPath = (plugin, pluginIndexPath) => {
   const { name, preload, tplPath, indexPath } = plugin;
   if (!preload) return;
   if (commonConst.dev()) {
     if (name === 'rubick-system-feature') {
-      return path.resolve(__static, `../feature/public/preload.js`);
+      return resolveStatic('feature/public/preload.js');
     }
     if (tplPath) {
       return path.resolve(getRelativePath(indexPath), `./`, preload);
@@ -121,16 +122,16 @@ export default () => {
     if (plugin.name === 'rubick-system-feature' && !pluginIndexPath) {
       pluginIndexPath = commonConst.dev()
         ? 'http://localhost:8081/#/'
-        : `file://${__static}/feature/index.html`;
+        : `file://${resolveStatic('feature/index.html')}`;
     }
     if (!pluginIndexPath) {
       const pluginPath = path.resolve(baseDir, 'node_modules', name);
       pluginIndexPath = `file://${path.join(pluginPath, './', main)}`;
     }
-    const preload = getPreloadPath(plugin, preloadPath || pluginIndexPath);
+    const preload = getPluginPreloadPath(plugin, preloadPath || pluginIndexPath);
 
     const ses = session.fromPartition('<' + name + '>');
-    ses.setPreloads([`${__static}/preload.js`]);
+    ses.setPreloads([getMainPreloadPath()]);
 
     view = new BrowserView({
       webPreferences: {

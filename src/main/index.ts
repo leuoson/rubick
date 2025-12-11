@@ -5,8 +5,15 @@ import electron, {
   protocol,
   BrowserWindow,
 } from 'electron';
+import './common/static';
 import { main, guide } from './browsers';
 import commonConst from '../common/utils/commonConst';
+import appSearch from '../core/app-search';
+import { PluginHandler } from '../core';
+
+// 注册全局变量供 renderer 通过 getGlobal 访问
+(global as any).appSearch = appSearch;
+(global as any).PluginHandler = PluginHandler;
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import API from './common/api';
@@ -51,7 +58,7 @@ class App {
       if (commonConst.production() && !app.isInApplicationsFolder()) {
         app.moveToApplicationsFolder();
       } else {
-        app.dock.hide();
+        app.dock?.hide();
       }
     } else {
       app.disableHardwareAcceleration();

@@ -1,6 +1,6 @@
 import commonConst from './commonConst';
-import { clipboard } from 'electron';
 import plist from 'plist';
+import { clipboard } from 'electron';
 import fs from 'fs';
 import path from 'path';
 import ofs from 'original-fs';

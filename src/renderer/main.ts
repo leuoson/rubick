@@ -14,20 +14,36 @@ import {
 import App from './App.vue';
 import localConfig from './confOp';
 
-import 'ant-design-vue/dist/antd.variable.min.css';
+import 'ant-design-vue/dist/reset.css';
 
-const config: any = localConfig.getConfig();
-
-ConfigProvider.config({
-  theme: config.perf.custom || {},
-});
-
-window.rubick.changeTheme = () => {
+// 等待 preload 完成后再初始化
+const initApp = () => {
   const config: any = localConfig.getConfig();
-  ConfigProvider.config({
-    theme: config.perf.custom || {},
-  });
+  if (config?.perf?.custom) {
+    ConfigProvider.config({
+      theme: config.perf.custom,
+    });
+  }
+
+  if (window.rubick) {
+    window.rubick.changeTheme = () => {
+      const config: any = localConfig.getConfig();
+      if (config?.perf?.custom) {
+        ConfigProvider.config({
+          theme: config.perf.custom,
+        });
+      }
+    };
+  }
 };
+
+// 确保 window.rubick 已加载
+if (window.rubick) {
+  initApp();
+} else {
+  // 如果 preload 还没完成，等待一下
+  setTimeout(initApp, 100);
+}
 
 createApp(App)
   .use(Button)

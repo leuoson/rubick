@@ -1,7 +1,9 @@
 import { ref, watch } from 'vue';
 import debounce from 'lodash.debounce';
-import { ipcRenderer } from 'electron';
-import { getGlobal } from '@electron/remote';
+
+// 使用 preload 暴露的 window 对象访问 Node.js 功能
+const { ipcRenderer } = window.electron;
+const { getGlobal } = window.electronRemote;
 import PinyinMatch from 'pinyin-match';
 import pluginClickEvent from './pluginClickEvent';
 import useFocus from './clipboardWatch';

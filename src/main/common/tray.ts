@@ -1,9 +1,9 @@
 import { dialog, Menu, Tray, app, shell, BrowserWindow } from 'electron';
-import path from 'path';
 import pkg from '../../../package.json';
 import os from 'os';
 import commonConst from '@/common/utils/commonConst';
 import { guide } from '../browsers';
+import { resolveStatic } from '@/main/common/static';
 
 function createTray(window: BrowserWindow): Promise<Tray> {
   return new Promise((resolve) => {
@@ -18,7 +18,7 @@ function createTray(window: BrowserWindow): Promise<Tray> {
     } else {
       icon = './icons/icon@2x.png';
     }
-    const appIcon = new Tray(path.join(__static, icon));
+    const appIcon = new Tray(resolveStatic(icon));
 
     const openSettings = () => {
       window.webContents.executeJavaScript(

@@ -5,13 +5,20 @@ import {
 import fs from 'fs-extra';
 import path from 'path';
 import got from 'got';
-import fixPath from 'fix-path';
 
 import spawn from 'cross-spawn';
 import { ipcRenderer } from 'electron';
 import axios from 'axios';
 
-fixPath();
+// fix-path v3+ 是 ESM 模块，需要动态导入
+(async () => {
+  try {
+    const fixPath = (await import('fix-path')).default;
+    fixPath();
+  } catch (e) {
+    // ignore
+  }
+})();
 
 /**
  * 系统插件管理器

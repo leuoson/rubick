@@ -1,7 +1,10 @@
-import getCopyFiles from '@/common/utils/getCopyFiles';
-import { clipboard, nativeImage, ipcRenderer } from 'electron';
-import { getGlobal } from '@electron/remote';
-import path from 'path';
+// 使用 preload 暴露的 window.rubick.getCopyedFiles() 替代直接导入
+const getCopyFiles = () => window.rubick.getCopyedFiles();
+
+// 使用 preload 暴露的 window 对象访问 Node.js 功能
+const { clipboard, nativeImage, ipcRenderer } = window.electron;
+const { getGlobal } = window.electronRemote;
+const path = window.nodePath;
 import pluginClickEvent from './pluginClickEvent';
 import localConfig from '../confOp';
 import { ref } from 'vue';

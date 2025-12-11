@@ -1,4 +1,5 @@
-import { ipcRenderer } from 'electron';
+// 使用 preload 暴露的 window.electron
+const getIpcRenderer = () => window.electron?.ipcRenderer;
 
 const useDrag = () => {
   let animationId: number;
@@ -31,10 +32,13 @@ const useDrag = () => {
   };
 
   const moveWindow = () => {
-    ipcRenderer.send('msg-trigger', {
-      type: 'windowMoving',
-      data: { mouseX, mouseY, width: clientWidth, height: clientHeight },
-    });
+    const ipcRenderer = getIpcRenderer();
+    if (ipcRenderer) {
+      ipcRenderer.send('msg-trigger', {
+        type: 'windowMoving',
+        data: { mouseX, mouseY, width: clientWidth, height: clientHeight },
+      });
+    }
     if (draggable) animationId = requestAnimationFrame(moveWindow);
   };
 

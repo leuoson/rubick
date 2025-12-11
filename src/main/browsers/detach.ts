@@ -1,9 +1,9 @@
 import { BrowserWindow, ipcMain, nativeTheme, screen } from 'electron';
 import localConfig from '../common/initLocalConfig';
 import commonConst from '@/common/utils/commonConst';
-import path from 'path';
 import { WINDOW_MIN_HEIGHT } from '@/common/constans/common';
 import mainInstance from '@/main';
+import { resolveStatic } from '@/main/common/static';
 export default () => {
   let win: any;
 
@@ -44,12 +44,7 @@ export default () => {
         spellcheck: false,
       },
     });
-    if (process.env.WEBPACK_DEV_SERVER_URL) {
-      // Load the url of the dev server if in development mode
-      createWin.loadURL('http://localhost:8082');
-    } else {
-      createWin.loadURL(`file://${path.join(__static, './detach/index.html')}`);
-    }
+    createWin.loadURL(`file://${resolveStatic('detach/index.html')}`);
     createWin.on('close', () => {
       executeHooks('PluginOut', null);
     });

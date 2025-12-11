@@ -18,6 +18,8 @@ import {
   DECODE_KEY,
   PLUGIN_INSTALL_DIR as baseDir,
 } from '@/common/constans/main';
+import { putFileToRubick } from './getSearchFiles';
+import { resolveStatic } from '@/main/common/static';
 import getCopyFiles from '@/common/utils/getCopyFiles';
 import common from '@/common/utils/commonConst';
 
@@ -135,13 +137,14 @@ class API extends DBInstance {
     if (!plugin.main) {
       plugin.tplPath = common.dev()
         ? 'http://localhost:8083/#/'
-        : `file://${__static}/tpl/index.html`;
+        : `file://${resolveStatic('tpl/index.html')}`;
     }
     if (plugin.name === 'rubick-system-feature') {
-      plugin.logo = plugin.logo || `file://${__static}/logo.png`;
+      plugin.logo =
+        plugin.logo || `file://${resolveStatic('logo.png')}`;
       plugin.indexPath = commonConst.dev()
         ? 'http://localhost:8081/#/'
-        : `file://${__static}/feature/index.html`;
+        : `file://${resolveStatic('feature/index.html')}`;
     } else if (!plugin.indexPath) {
       const pluginPath = path.resolve(baseDir, 'node_modules', plugin.name);
       plugin.indexPath = `file://${path.join(

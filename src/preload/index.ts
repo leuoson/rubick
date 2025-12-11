@@ -1,11 +1,44 @@
+// @ts-nocheck
+/* eslint-disable @typescript-eslint/no-var-requires */
 const { ipcRenderer, shell } = require('electron');
-const { BrowserWindow, nativeTheme, screen, app, Menu } = require('@electron/remote');
 const os = require('os');
 const path = require('path');
 
-const appPath = app.getPath('userData');
+let remote;
+let BrowserWindow, nativeTheme, screen, app;
+try {
+  remote = require('@electron/remote');
+  BrowserWindow = remote.BrowserWindow;
+  nativeTheme = remote.nativeTheme;
+  screen = remote.screen;
+  app = remote.app;
+} catch (e) {
+  console.error('[Preload] Failed to load @electron/remote:', e);
+}
 
-const baseDir = path.join(appPath, './rubick-plugins-new');
+// 兼容 __static
+let staticBase;
+try {
+  staticBase = app?.isPackaged
+    ? path.join(process.resourcesPath, 'static')
+    : path.join(process.cwd(), 'public');
+} catch (e) {
+  staticBase = path.join(process.cwd(), 'public');
+  console.error('[Preload] Failed to determine static path:', e);
+}
+(global as any).__static = staticBase;
+// 兼容 renderer 直接使用 __static
+;(window as any).__static = staticBase;
+
+let appPath, baseDir;
+try {
+  appPath = app?.getPath('userData') || path.join(os.homedir(), '.rubick');
+  baseDir = path.join(appPath, './rubick-plugins-new');
+} catch (e) {
+  appPath = path.join(os.homedir(), '.rubick');
+  baseDir = path.join(appPath, './rubick-plugins-new');
+  console.error('[Preload] Failed to get userData path:', e);
+}
 
 const ipcSendSync = (type, data) => {
   const returnValue = ipcRenderer.sendSync('msg-trigger', {
@@ -23,6 +56,7 @@ const ipcSend = (type, data) => {
   });
 };
 
+// preload 暴露的全局 API
 window.rubick = {
   hooks: {},
   __event__: {},
@@ -161,8 +195,8 @@ window.rubick = {
     return os.type() === 'Linux';
   },
 
-  shellOpenPath(path) {
-    shell.openPath(path);
+  shellOpenPath(pathStr) {
+    shell.openPath(pathStr);
   },
 
   getLocalId: () => ipcSendSync('getLocalId'),
@@ -171,8 +205,8 @@ window.rubick = {
     ipcSend('removePlugin');
   },
 
-  shellShowItemInFolder: (path) => {
-    ipcSend('shellShowItemInFolder', { path });
+  shellShowItemInFolder: (pathStr) => {
+    ipcSend('shellShowItemInFolder', { path: pathStr });
   },
 
   redirect: (label, payload) => {
@@ -183,8 +217,8 @@ window.rubick = {
     ipcSend('shellBeep');
   },
 
-  getFileIcon: (path) => {
-    return ipcSendSync('getFileIcon', { path });
+  getFileIcon: (pathStr) => {
+    return ipcSendSync('getFileIcon', { path: pathStr });
   },
 
   getCopyedFiles: () => {
@@ -309,25 +343,3 @@ window.rubick = {
     return win;
   },
 };
-
-// ==================== 为 renderer 暴露额外的 Node.js 功能 ====================
-// 这些功能供 renderer 通过 window.xxx 访问，避免 Vite 构建问题
-
-const { nativeImage, clipboard } = require('electron');
-const { getGlobal } = require('@electron/remote');
-const { exec } = require('child_process');
-
-// 暴露 __static 路径
-window.__static = app.isPackaged
-  ? path.join(process.resourcesPath, 'static')
-  : path.join(process.cwd(), 'public');
-
-// 暴露常用模块和函数到 window
-window.electron = { nativeImage, clipboard, ipcRenderer, shell };
-window.electronRemote = { getGlobal, app, BrowserWindow, nativeTheme, screen, Menu };
-window.nodePath = path;
-window.nodeOs = os;
-window.childProcess = { exec };
-
-// 暴露插件相关常量
-window.PLUGIN_INSTALL_DIR = baseDir;

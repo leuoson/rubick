@@ -1,17 +1,21 @@
 import { reactive, toRefs, ref } from 'vue';
-import { nativeImage, ipcRenderer } from 'electron';
-import { getGlobal } from '@electron/remote';
-import appSearch from '@/core/app-search';
-import { PluginHandler } from '@/core';
-import path from 'path';
 import commonConst from '@/common/utils/commonConst';
-import { exec } from 'child_process';
+
+// 使用 preload 暴露的 window 对象访问 Node.js 功能
+const { nativeImage, ipcRenderer } = window.electron;
+const { getGlobal } = window.electronRemote;
+const path = window.nodePath;
+const { exec } = window.childProcess;
+
+// 通过 getGlobal 从 main 进程获取模块
+const appSearch = getGlobal('appSearch');
+const PluginHandler = getGlobal('PluginHandler');
 import searchManager from './search';
 import optionsManager from './options';
-import {
-  PLUGIN_INSTALL_DIR as baseDir,
-  PLUGIN_HISTORY,
-} from '@/common/constans/renderer';
+import { PLUGIN_HISTORY } from '@/common/constans/renderer';
+
+// 使用 preload 暴露的 PLUGIN_INSTALL_DIR
+const baseDir = window.PLUGIN_INSTALL_DIR;
 import { message } from 'ant-design-vue';
 
 const createPluginManager = (): any => {

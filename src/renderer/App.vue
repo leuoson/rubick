@@ -32,19 +32,21 @@
 
 <script setup lang="ts">
 import { watch, ref, toRaw } from 'vue';
-import { exec } from 'child_process';
 import Result from './components/result.vue';
 import Search from './components/search.vue';
 import getWindowHeight from '../common/utils/getWindowHeight';
 import createPluginManager from './plugins-manager';
 import useDrag from '../common/utils/dragWindow';
-import { getGlobal } from '@electron/remote';
-import { PLUGIN_HISTORY } from '@/common/constans/renderer';
 import { message } from 'ant-design-vue';
 import localConfig from './confOp';
 
+// 使用 preload 暴露的 window 对象
+const { exec } = window.childProcess;
+const { getGlobal } = window.electronRemote;
+const remote = window.electronRemote;
+const PLUGIN_HISTORY = 'rubick-plugin-history';
+
 const { onMouseDown } = useDrag();
-const remote = window.require('@electron/remote');
 
 const {
   initPlugins,
@@ -76,8 +78,7 @@ const config: any = ref(localConfig.getConfig());
 
 getPluginInfo({
   pluginName: 'feature',
-  // eslint-disable-next-line no-undef
-  pluginPath: `${__static}/feature/package.json`,
+  pluginPath: `${window.__static}/feature/package.json`,
 }).then((res) => {
   menuPluginInfo.value = res;
   remote.getGlobal('LOCAL_PLUGINS').addPlugin(res);

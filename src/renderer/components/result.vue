@@ -49,13 +49,12 @@
 </template>
 
 <script lang="ts" setup>
-import { defineEmits, defineProps, reactive, ref, toRaw, watch } from 'vue';
+import { reactive, ref, toRaw } from 'vue';
 import localConfig from '../confOp';
 
-const path = window.require('path');
-const remote = window.require('@electron/remote');
-
-declare const __static: string;
+// 使用 preload 暴露的 window 对象
+const path = window.nodePath;
+const remote = window.electronRemote;
 
 const config: any = ref(localConfig.getConfig());
 
@@ -141,7 +140,7 @@ const initMainCmdMenus = () => {
     {
       id: 'removeRecentCmd',
       label: '从"使用记录"中删除',
-      icon: path.join(__static, 'icons', 'delete@2x.png'),
+      icon: path.join(window.__static, 'icons', 'delete@2x.png'),
       click: () => {
         const history = props.pluginHistory.filter((item) => item.name !== menuState.plugin.name);
         emit('setPluginHistory', toRaw(history));
@@ -150,7 +149,7 @@ const initMainCmdMenus = () => {
     {
       id: 'pinToMain',
       label: '固定到"搜索面板"',
-      icon: path.join(__static, 'icons', 'pin@2x.png'),
+      icon: path.join(window.__static, 'icons', 'pin@2x.png'),
       click: () => {
         const history = props.pluginHistory.map((item) => {
           if (item.name === menuState.plugin.name) {
@@ -164,7 +163,7 @@ const initMainCmdMenus = () => {
     {
       id: 'unpinFromMain',
       label: '从"搜索面板"取消固定',
-      icon: path.join(__static, 'icons', 'unpin@2x.png'),
+      icon: path.join(window.__static, 'icons', 'unpin@2x.png'),
       click: () => {
         const history = props.pluginHistory.map((item) => {
           if (item.name === menuState.plugin.name) {

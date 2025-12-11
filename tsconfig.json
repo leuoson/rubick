@@ -14,7 +14,9 @@
     "noImplicitAny": false,
     "baseUrl": ".",
     "types": [
-      "webpack-env"
+      "node",
+      "electron",
+      "vite/client"
     ],
     "paths": {
       "@/*": [

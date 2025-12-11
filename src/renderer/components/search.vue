@@ -51,11 +51,12 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits, ref } from 'vue';
-import { ipcRenderer } from 'electron';
+import { ref } from 'vue';
 import { MoreOutlined } from '@ant-design/icons-vue';
 
-const remote = window.require('@electron/remote');
+// 使用 preload 暴露的 window 对象
+const { ipcRenderer } = window.electron;
+const remote = window.electronRemote;
 import localConfig from '../confOp';
 const { Menu } = remote;
 

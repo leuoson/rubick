@@ -1,11 +1,11 @@
 import { clipboard, Notification } from 'electron';
 import { execFile, exec } from 'child_process';
 import platform from '@/common/utils/commonConst';
-import path from 'path';
+import { resolveStatic } from '@/main/common/static';
 
 // 截图方法windows
 export const screenWindow = (cb) => {
-  const url = path.resolve(__static, 'ScreenCapture.exe');
+  const url = resolveStatic('ScreenCapture.exe');
   const screen_window = execFile(url);
   screen_window.on('exit', (code) => {
     if (code) {

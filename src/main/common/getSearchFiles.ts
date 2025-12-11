@@ -1,6 +1,7 @@
 import path from 'path';
 import fs from 'fs-extra';
 import os from 'os';
+import { resolveStatic } from '@/main/common/static';
 
 const getSearchFiles = (argv = process.argv, cwd = process.cwd()) => {
   const files = argv.slice(2); // 过滤['rubick.exe', 'search']这两个参数，直接获取需要上传的图片路径
@@ -73,12 +74,9 @@ const macBeforeOpen = () => {
   } else {
     // 如果不存在就复制过去
     try {
-      copyFileOutsideOfElectronAsar(
-        path.join(__static, 'rubick.workflow'),
-        dest
-      );
+      copyFileOutsideOfElectronAsar(resolveStatic('rubick.workflow'), dest);
     } catch (e) {
-      console.log(e);
+      // ignore
     }
   }
 };
