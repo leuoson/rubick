@@ -22,28 +22,35 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 const electron = require("electron");
-const path$h = require("path");
-const fs$l = require("fs");
-const require$$0 = require("constants");
-const require$$0$1 = require("stream");
-const require$$4 = require("util");
-const require$$5 = require("assert");
-const os = require("os");
+const path = require("path");
+const fs = require("fs-extra");
 const got = require("got");
 const spawn = require("cross-spawn");
 const axios = require("axios");
+const fs$1 = require("fs");
 const PouchDB = require("pouchdb");
 const MemoryStream = require("memorystream");
 const webdav = require("webdav");
 const child_process = require("child_process");
+const os = require("os");
 const originfs = require("original-fs");
 const ks = require("node-key-sender");
 const uiohookNapi = require("uiohook-napi");
+const ai = require("ai");
+const openai = require("@ai-sdk/openai");
+const anthropic = require("@ai-sdk/anthropic");
+const google = require("@ai-sdk/google");
+const openaiCompatible = require("@ai-sdk/openai-compatible");
 const isDev = () => !electron.app.isPackaged;
-const getStaticPath = () => isDev() ? path$h.join(process.cwd(), "public") : path$h.join(process.resourcesPath, "static");
-const resolveStatic = (...args) => path$h.join(getStaticPath(), ...args);
+const getStaticPath = () => isDev() ? path.join(process.cwd(), "public") : path.join(process.resourcesPath, "static");
+const resolveStatic = (...args) => path.join(getStaticPath(), ...args);
 global.__static = getStaticPath();
-const getPreloadPath = () => resolveStatic("preload.js");
+const getPreloadPath = () => {
+  if (isDev()) {
+    return path.join(process.cwd(), "out", "preload", "index.js");
+  }
+  return path.join(__dirname, "..", "preload", "index.js");
+};
 const defaultConfig = {
   version: 8,
   perf: {
@@ -85,2366 +92,6 @@ const defaultConfig = {
   },
   global: []
 };
-var commonjsGlobal = typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : {};
-function getDefaultExportFromCjs(x) {
-  return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, "default") ? x["default"] : x;
-}
-var lib$2 = { exports: {} };
-var fs$k = {};
-var universalify = {};
-universalify.fromCallback = function(fn) {
-  return Object.defineProperty(function() {
-    if (typeof arguments[arguments.length - 1] === "function") fn.apply(this, arguments);
-    else {
-      return new Promise((resolve, reject) => {
-        arguments[arguments.length] = (err, res) => {
-          if (err) return reject(err);
-          resolve(res);
-        };
-        arguments.length++;
-        fn.apply(this, arguments);
-      });
-    }
-  }, "name", { value: fn.name });
-};
-universalify.fromPromise = function(fn) {
-  return Object.defineProperty(function() {
-    const cb = arguments[arguments.length - 1];
-    if (typeof cb !== "function") return fn.apply(this, arguments);
-    else fn.apply(this, arguments).then((r) => cb(null, r), cb);
-  }, "name", { value: fn.name });
-};
-var constants$2 = require$$0;
-var origCwd = process.cwd;
-var cwd = null;
-var platform = process.env.GRACEFUL_FS_PLATFORM || process.platform;
-process.cwd = function() {
-  if (!cwd)
-    cwd = origCwd.call(process);
-  return cwd;
-};
-try {
-  process.cwd();
-} catch (er) {
-}
-if (typeof process.chdir === "function") {
-  var chdir = process.chdir;
-  process.chdir = function(d) {
-    cwd = null;
-    chdir.call(process, d);
-  };
-  if (Object.setPrototypeOf) Object.setPrototypeOf(process.chdir, chdir);
-}
-var polyfills$1 = patch$3;
-function patch$3(fs2) {
-  if (constants$2.hasOwnProperty("O_SYMLINK") && process.version.match(/^v0\.6\.[0-2]|^v0\.5\./)) {
-    patchLchmod(fs2);
-  }
-  if (!fs2.lutimes) {
-    patchLutimes(fs2);
-  }
-  fs2.chown = chownFix(fs2.chown);
-  fs2.fchown = chownFix(fs2.fchown);
-  fs2.lchown = chownFix(fs2.lchown);
-  fs2.chmod = chmodFix(fs2.chmod);
-  fs2.fchmod = chmodFix(fs2.fchmod);
-  fs2.lchmod = chmodFix(fs2.lchmod);
-  fs2.chownSync = chownFixSync(fs2.chownSync);
-  fs2.fchownSync = chownFixSync(fs2.fchownSync);
-  fs2.lchownSync = chownFixSync(fs2.lchownSync);
-  fs2.chmodSync = chmodFixSync(fs2.chmodSync);
-  fs2.fchmodSync = chmodFixSync(fs2.fchmodSync);
-  fs2.lchmodSync = chmodFixSync(fs2.lchmodSync);
-  fs2.stat = statFix(fs2.stat);
-  fs2.fstat = statFix(fs2.fstat);
-  fs2.lstat = statFix(fs2.lstat);
-  fs2.statSync = statFixSync(fs2.statSync);
-  fs2.fstatSync = statFixSync(fs2.fstatSync);
-  fs2.lstatSync = statFixSync(fs2.lstatSync);
-  if (fs2.chmod && !fs2.lchmod) {
-    fs2.lchmod = function(path2, mode, cb) {
-      if (cb) process.nextTick(cb);
-    };
-    fs2.lchmodSync = function() {
-    };
-  }
-  if (fs2.chown && !fs2.lchown) {
-    fs2.lchown = function(path2, uid, gid, cb) {
-      if (cb) process.nextTick(cb);
-    };
-    fs2.lchownSync = function() {
-    };
-  }
-  if (platform === "win32") {
-    fs2.rename = typeof fs2.rename !== "function" ? fs2.rename : function(fs$rename) {
-      function rename2(from, to, cb) {
-        var start = Date.now();
-        var backoff = 0;
-        fs$rename(from, to, function CB(er) {
-          if (er && (er.code === "EACCES" || er.code === "EPERM" || er.code === "EBUSY") && Date.now() - start < 6e4) {
-            setTimeout(function() {
-              fs2.stat(to, function(stater, st) {
-                if (stater && stater.code === "ENOENT")
-                  fs$rename(from, to, CB);
-                else
-                  cb(er);
-              });
-            }, backoff);
-            if (backoff < 100)
-              backoff += 10;
-            return;
-          }
-          if (cb) cb(er);
-        });
-      }
-      if (Object.setPrototypeOf) Object.setPrototypeOf(rename2, fs$rename);
-      return rename2;
-    }(fs2.rename);
-  }
-  fs2.read = typeof fs2.read !== "function" ? fs2.read : function(fs$read) {
-    function read(fd, buffer2, offset, length, position2, callback_) {
-      var callback;
-      if (callback_ && typeof callback_ === "function") {
-        var eagCounter = 0;
-        callback = function(er, _, __) {
-          if (er && er.code === "EAGAIN" && eagCounter < 10) {
-            eagCounter++;
-            return fs$read.call(fs2, fd, buffer2, offset, length, position2, callback);
-          }
-          callback_.apply(this, arguments);
-        };
-      }
-      return fs$read.call(fs2, fd, buffer2, offset, length, position2, callback);
-    }
-    if (Object.setPrototypeOf) Object.setPrototypeOf(read, fs$read);
-    return read;
-  }(fs2.read);
-  fs2.readSync = typeof fs2.readSync !== "function" ? fs2.readSync : /* @__PURE__ */ function(fs$readSync) {
-    return function(fd, buffer2, offset, length, position2) {
-      var eagCounter = 0;
-      while (true) {
-        try {
-          return fs$readSync.call(fs2, fd, buffer2, offset, length, position2);
-        } catch (er) {
-          if (er.code === "EAGAIN" && eagCounter < 10) {
-            eagCounter++;
-            continue;
-          }
-          throw er;
-        }
-      }
-    };
-  }(fs2.readSync);
-  function patchLchmod(fs22) {
-    fs22.lchmod = function(path2, mode, callback) {
-      fs22.open(
-        path2,
-        constants$2.O_WRONLY | constants$2.O_SYMLINK,
-        mode,
-        function(err, fd) {
-          if (err) {
-            if (callback) callback(err);
-            return;
-          }
-          fs22.fchmod(fd, mode, function(err2) {
-            fs22.close(fd, function(err22) {
-              if (callback) callback(err2 || err22);
-            });
-          });
-        }
-      );
-    };
-    fs22.lchmodSync = function(path2, mode) {
-      var fd = fs22.openSync(path2, constants$2.O_WRONLY | constants$2.O_SYMLINK, mode);
-      var threw = true;
-      var ret;
-      try {
-        ret = fs22.fchmodSync(fd, mode);
-        threw = false;
-      } finally {
-        if (threw) {
-          try {
-            fs22.closeSync(fd);
-          } catch (er) {
-          }
-        } else {
-          fs22.closeSync(fd);
-        }
-      }
-      return ret;
-    };
-  }
-  function patchLutimes(fs22) {
-    if (constants$2.hasOwnProperty("O_SYMLINK") && fs22.futimes) {
-      fs22.lutimes = function(path2, at, mt, cb) {
-        fs22.open(path2, constants$2.O_SYMLINK, function(er, fd) {
-          if (er) {
-            if (cb) cb(er);
-            return;
-          }
-          fs22.futimes(fd, at, mt, function(er2) {
-            fs22.close(fd, function(er22) {
-              if (cb) cb(er2 || er22);
-            });
-          });
-        });
-      };
-      fs22.lutimesSync = function(path2, at, mt) {
-        var fd = fs22.openSync(path2, constants$2.O_SYMLINK);
-        var ret;
-        var threw = true;
-        try {
-          ret = fs22.futimesSync(fd, at, mt);
-          threw = false;
-        } finally {
-          if (threw) {
-            try {
-              fs22.closeSync(fd);
-            } catch (er) {
-            }
-          } else {
-            fs22.closeSync(fd);
-          }
-        }
-        return ret;
-      };
-    } else if (fs22.futimes) {
-      fs22.lutimes = function(_a, _b, _c, cb) {
-        if (cb) process.nextTick(cb);
-      };
-      fs22.lutimesSync = function() {
-      };
-    }
-  }
-  function chmodFix(orig) {
-    if (!orig) return orig;
-    return function(target, mode, cb) {
-      return orig.call(fs2, target, mode, function(er) {
-        if (chownErOk(er)) er = null;
-        if (cb) cb.apply(this, arguments);
-      });
-    };
-  }
-  function chmodFixSync(orig) {
-    if (!orig) return orig;
-    return function(target, mode) {
-      try {
-        return orig.call(fs2, target, mode);
-      } catch (er) {
-        if (!chownErOk(er)) throw er;
-      }
-    };
-  }
-  function chownFix(orig) {
-    if (!orig) return orig;
-    return function(target, uid, gid, cb) {
-      return orig.call(fs2, target, uid, gid, function(er) {
-        if (chownErOk(er)) er = null;
-        if (cb) cb.apply(this, arguments);
-      });
-    };
-  }
-  function chownFixSync(orig) {
-    if (!orig) return orig;
-    return function(target, uid, gid) {
-      try {
-        return orig.call(fs2, target, uid, gid);
-      } catch (er) {
-        if (!chownErOk(er)) throw er;
-      }
-    };
-  }
-  function statFix(orig) {
-    if (!orig) return orig;
-    return function(target, options, cb) {
-      if (typeof options === "function") {
-        cb = options;
-        options = null;
-      }
-      function callback(er, stats) {
-        if (stats) {
-          if (stats.uid < 0) stats.uid += 4294967296;
-          if (stats.gid < 0) stats.gid += 4294967296;
-        }
-        if (cb) cb.apply(this, arguments);
-      }
-      return options ? orig.call(fs2, target, options, callback) : orig.call(fs2, target, callback);
-    };
-  }
-  function statFixSync(orig) {
-    if (!orig) return orig;
-    return function(target, options) {
-      var stats = options ? orig.call(fs2, target, options) : orig.call(fs2, target);
-      if (stats) {
-        if (stats.uid < 0) stats.uid += 4294967296;
-        if (stats.gid < 0) stats.gid += 4294967296;
-      }
-      return stats;
-    };
-  }
-  function chownErOk(er) {
-    if (!er)
-      return true;
-    if (er.code === "ENOSYS")
-      return true;
-    var nonroot = !process.getuid || process.getuid() !== 0;
-    if (nonroot) {
-      if (er.code === "EINVAL" || er.code === "EPERM")
-        return true;
-    }
-    return false;
-  }
-}
-var Stream = require$$0$1.Stream;
-var legacyStreams = legacy$1;
-function legacy$1(fs2) {
-  return {
-    ReadStream,
-    WriteStream
-  };
-  function ReadStream(path2, options) {
-    if (!(this instanceof ReadStream)) return new ReadStream(path2, options);
-    Stream.call(this);
-    var self2 = this;
-    this.path = path2;
-    this.fd = null;
-    this.readable = true;
-    this.paused = false;
-    this.flags = "r";
-    this.mode = 438;
-    this.bufferSize = 64 * 1024;
-    options = options || {};
-    var keys = Object.keys(options);
-    for (var index2 = 0, length = keys.length; index2 < length; index2++) {
-      var key = keys[index2];
-      this[key] = options[key];
-    }
-    if (this.encoding) this.setEncoding(this.encoding);
-    if (this.start !== void 0) {
-      if ("number" !== typeof this.start) {
-        throw TypeError("start must be a Number");
-      }
-      if (this.end === void 0) {
-        this.end = Infinity;
-      } else if ("number" !== typeof this.end) {
-        throw TypeError("end must be a Number");
-      }
-      if (this.start > this.end) {
-        throw new Error("start must be <= end");
-      }
-      this.pos = this.start;
-    }
-    if (this.fd !== null) {
-      process.nextTick(function() {
-        self2._read();
-      });
-      return;
-    }
-    fs2.open(this.path, this.flags, this.mode, function(err, fd) {
-      if (err) {
-        self2.emit("error", err);
-        self2.readable = false;
-        return;
-      }
-      self2.fd = fd;
-      self2.emit("open", fd);
-      self2._read();
-    });
-  }
-  function WriteStream(path2, options) {
-    if (!(this instanceof WriteStream)) return new WriteStream(path2, options);
-    Stream.call(this);
-    this.path = path2;
-    this.fd = null;
-    this.writable = true;
-    this.flags = "w";
-    this.encoding = "binary";
-    this.mode = 438;
-    this.bytesWritten = 0;
-    options = options || {};
-    var keys = Object.keys(options);
-    for (var index2 = 0, length = keys.length; index2 < length; index2++) {
-      var key = keys[index2];
-      this[key] = options[key];
-    }
-    if (this.start !== void 0) {
-      if ("number" !== typeof this.start) {
-        throw TypeError("start must be a Number");
-      }
-      if (this.start < 0) {
-        throw new Error("start must be >= zero");
-      }
-      this.pos = this.start;
-    }
-    this.busy = false;
-    this._queue = [];
-    if (this.fd === null) {
-      this._open = fs2.open;
-      this._queue.push([this._open, this.path, this.flags, this.mode, void 0]);
-      this.flush();
-    }
-  }
-}
-var clone_1 = clone$1;
-var getPrototypeOf = Object.getPrototypeOf || function(obj) {
-  return obj.__proto__;
-};
-function clone$1(obj) {
-  if (obj === null || typeof obj !== "object")
-    return obj;
-  if (obj instanceof Object)
-    var copy2 = { __proto__: getPrototypeOf(obj) };
-  else
-    var copy2 = /* @__PURE__ */ Object.create(null);
-  Object.getOwnPropertyNames(obj).forEach(function(key) {
-    Object.defineProperty(copy2, key, Object.getOwnPropertyDescriptor(obj, key));
-  });
-  return copy2;
-}
-var fs$j = fs$l;
-var polyfills = polyfills$1;
-var legacy = legacyStreams;
-var clone = clone_1;
-var util = require$$4;
-var gracefulQueue;
-var previousSymbol;
-if (typeof Symbol === "function" && typeof Symbol.for === "function") {
-  gracefulQueue = Symbol.for("graceful-fs.queue");
-  previousSymbol = Symbol.for("graceful-fs.previous");
-} else {
-  gracefulQueue = "___graceful-fs.queue";
-  previousSymbol = "___graceful-fs.previous";
-}
-function noop() {
-}
-function publishQueue(context, queue2) {
-  Object.defineProperty(context, gracefulQueue, {
-    get: function() {
-      return queue2;
-    }
-  });
-}
-var debug$2 = noop;
-if (util.debuglog)
-  debug$2 = util.debuglog("gfs4");
-else if (/\bgfs4\b/i.test(process.env.NODE_DEBUG || ""))
-  debug$2 = function() {
-    var m = util.format.apply(util, arguments);
-    m = "GFS4: " + m.split(/\n/).join("\nGFS4: ");
-    console.error(m);
-  };
-if (!fs$j[gracefulQueue]) {
-  var queue = commonjsGlobal[gracefulQueue] || [];
-  publishQueue(fs$j, queue);
-  fs$j.close = function(fs$close) {
-    function close(fd, cb) {
-      return fs$close.call(fs$j, fd, function(err) {
-        if (!err) {
-          resetQueue();
-        }
-        if (typeof cb === "function")
-          cb.apply(this, arguments);
-      });
-    }
-    Object.defineProperty(close, previousSymbol, {
-      value: fs$close
-    });
-    return close;
-  }(fs$j.close);
-  fs$j.closeSync = function(fs$closeSync) {
-    function closeSync(fd) {
-      fs$closeSync.apply(fs$j, arguments);
-      resetQueue();
-    }
-    Object.defineProperty(closeSync, previousSymbol, {
-      value: fs$closeSync
-    });
-    return closeSync;
-  }(fs$j.closeSync);
-  if (/\bgfs4\b/i.test(process.env.NODE_DEBUG || "")) {
-    process.on("exit", function() {
-      debug$2(fs$j[gracefulQueue]);
-      require$$5.equal(fs$j[gracefulQueue].length, 0);
-    });
-  }
-}
-if (!commonjsGlobal[gracefulQueue]) {
-  publishQueue(commonjsGlobal, fs$j[gracefulQueue]);
-}
-var gracefulFs = patch$2(clone(fs$j));
-if (process.env.TEST_GRACEFUL_FS_GLOBAL_PATCH && !fs$j.__patched) {
-  gracefulFs = patch$2(fs$j);
-  fs$j.__patched = true;
-}
-function patch$2(fs2) {
-  polyfills(fs2);
-  fs2.gracefulify = patch$2;
-  fs2.createReadStream = createReadStream;
-  fs2.createWriteStream = createWriteStream;
-  var fs$readFile = fs2.readFile;
-  fs2.readFile = readFile2;
-  function readFile2(path2, options, cb) {
-    if (typeof options === "function")
-      cb = options, options = null;
-    return go$readFile(path2, options, cb);
-    function go$readFile(path22, options2, cb2, startTime) {
-      return fs$readFile(path22, options2, function(err) {
-        if (err && (err.code === "EMFILE" || err.code === "ENFILE"))
-          enqueue([go$readFile, [path22, options2, cb2], err, startTime || Date.now(), Date.now()]);
-        else {
-          if (typeof cb2 === "function")
-            cb2.apply(this, arguments);
-        }
-      });
-    }
-  }
-  var fs$writeFile = fs2.writeFile;
-  fs2.writeFile = writeFile2;
-  function writeFile2(path2, data, options, cb) {
-    if (typeof options === "function")
-      cb = options, options = null;
-    return go$writeFile(path2, data, options, cb);
-    function go$writeFile(path22, data2, options2, cb2, startTime) {
-      return fs$writeFile(path22, data2, options2, function(err) {
-        if (err && (err.code === "EMFILE" || err.code === "ENFILE"))
-          enqueue([go$writeFile, [path22, data2, options2, cb2], err, startTime || Date.now(), Date.now()]);
-        else {
-          if (typeof cb2 === "function")
-            cb2.apply(this, arguments);
-        }
-      });
-    }
-  }
-  var fs$appendFile = fs2.appendFile;
-  if (fs$appendFile)
-    fs2.appendFile = appendFile;
-  function appendFile(path2, data, options, cb) {
-    if (typeof options === "function")
-      cb = options, options = null;
-    return go$appendFile(path2, data, options, cb);
-    function go$appendFile(path22, data2, options2, cb2, startTime) {
-      return fs$appendFile(path22, data2, options2, function(err) {
-        if (err && (err.code === "EMFILE" || err.code === "ENFILE"))
-          enqueue([go$appendFile, [path22, data2, options2, cb2], err, startTime || Date.now(), Date.now()]);
-        else {
-          if (typeof cb2 === "function")
-            cb2.apply(this, arguments);
-        }
-      });
-    }
-  }
-  var fs$copyFile = fs2.copyFile;
-  if (fs$copyFile)
-    fs2.copyFile = copyFile2;
-  function copyFile2(src, dest, flags, cb) {
-    if (typeof flags === "function") {
-      cb = flags;
-      flags = 0;
-    }
-    return go$copyFile(src, dest, flags, cb);
-    function go$copyFile(src2, dest2, flags2, cb2, startTime) {
-      return fs$copyFile(src2, dest2, flags2, function(err) {
-        if (err && (err.code === "EMFILE" || err.code === "ENFILE"))
-          enqueue([go$copyFile, [src2, dest2, flags2, cb2], err, startTime || Date.now(), Date.now()]);
-        else {
-          if (typeof cb2 === "function")
-            cb2.apply(this, arguments);
-        }
-      });
-    }
-  }
-  var fs$readdir = fs2.readdir;
-  fs2.readdir = readdir;
-  var noReaddirOptionVersions = /^v[0-5]\./;
-  function readdir(path2, options, cb) {
-    if (typeof options === "function")
-      cb = options, options = null;
-    var go$readdir = noReaddirOptionVersions.test(process.version) ? function go$readdir2(path22, options2, cb2, startTime) {
-      return fs$readdir(path22, fs$readdirCallback(
-        path22,
-        options2,
-        cb2,
-        startTime
-      ));
-    } : function go$readdir2(path22, options2, cb2, startTime) {
-      return fs$readdir(path22, options2, fs$readdirCallback(
-        path22,
-        options2,
-        cb2,
-        startTime
-      ));
-    };
-    return go$readdir(path2, options, cb);
-    function fs$readdirCallback(path22, options2, cb2, startTime) {
-      return function(err, files) {
-        if (err && (err.code === "EMFILE" || err.code === "ENFILE"))
-          enqueue([
-            go$readdir,
-            [path22, options2, cb2],
-            err,
-            startTime || Date.now(),
-            Date.now()
-          ]);
-        else {
-          if (files && files.sort)
-            files.sort();
-          if (typeof cb2 === "function")
-            cb2.call(this, err, files);
-        }
-      };
-    }
-  }
-  if (process.version.substr(0, 4) === "v0.8") {
-    var legStreams = legacy(fs2);
-    ReadStream = legStreams.ReadStream;
-    WriteStream = legStreams.WriteStream;
-  }
-  var fs$ReadStream = fs2.ReadStream;
-  if (fs$ReadStream) {
-    ReadStream.prototype = Object.create(fs$ReadStream.prototype);
-    ReadStream.prototype.open = ReadStream$open;
-  }
-  var fs$WriteStream = fs2.WriteStream;
-  if (fs$WriteStream) {
-    WriteStream.prototype = Object.create(fs$WriteStream.prototype);
-    WriteStream.prototype.open = WriteStream$open;
-  }
-  Object.defineProperty(fs2, "ReadStream", {
-    get: function() {
-      return ReadStream;
-    },
-    set: function(val) {
-      ReadStream = val;
-    },
-    enumerable: true,
-    configurable: true
-  });
-  Object.defineProperty(fs2, "WriteStream", {
-    get: function() {
-      return WriteStream;
-    },
-    set: function(val) {
-      WriteStream = val;
-    },
-    enumerable: true,
-    configurable: true
-  });
-  var FileReadStream = ReadStream;
-  Object.defineProperty(fs2, "FileReadStream", {
-    get: function() {
-      return FileReadStream;
-    },
-    set: function(val) {
-      FileReadStream = val;
-    },
-    enumerable: true,
-    configurable: true
-  });
-  var FileWriteStream = WriteStream;
-  Object.defineProperty(fs2, "FileWriteStream", {
-    get: function() {
-      return FileWriteStream;
-    },
-    set: function(val) {
-      FileWriteStream = val;
-    },
-    enumerable: true,
-    configurable: true
-  });
-  function ReadStream(path2, options) {
-    if (this instanceof ReadStream)
-      return fs$ReadStream.apply(this, arguments), this;
-    else
-      return ReadStream.apply(Object.create(ReadStream.prototype), arguments);
-  }
-  function ReadStream$open() {
-    var that = this;
-    open(that.path, that.flags, that.mode, function(err, fd) {
-      if (err) {
-        if (that.autoClose)
-          that.destroy();
-        that.emit("error", err);
-      } else {
-        that.fd = fd;
-        that.emit("open", fd);
-        that.read();
-      }
-    });
-  }
-  function WriteStream(path2, options) {
-    if (this instanceof WriteStream)
-      return fs$WriteStream.apply(this, arguments), this;
-    else
-      return WriteStream.apply(Object.create(WriteStream.prototype), arguments);
-  }
-  function WriteStream$open() {
-    var that = this;
-    open(that.path, that.flags, that.mode, function(err, fd) {
-      if (err) {
-        that.destroy();
-        that.emit("error", err);
-      } else {
-        that.fd = fd;
-        that.emit("open", fd);
-      }
-    });
-  }
-  function createReadStream(path2, options) {
-    return new fs2.ReadStream(path2, options);
-  }
-  function createWriteStream(path2, options) {
-    return new fs2.WriteStream(path2, options);
-  }
-  var fs$open = fs2.open;
-  fs2.open = open;
-  function open(path2, flags, mode, cb) {
-    if (typeof mode === "function")
-      cb = mode, mode = null;
-    return go$open(path2, flags, mode, cb);
-    function go$open(path22, flags2, mode2, cb2, startTime) {
-      return fs$open(path22, flags2, mode2, function(err, fd) {
-        if (err && (err.code === "EMFILE" || err.code === "ENFILE"))
-          enqueue([go$open, [path22, flags2, mode2, cb2], err, startTime || Date.now(), Date.now()]);
-        else {
-          if (typeof cb2 === "function")
-            cb2.apply(this, arguments);
-        }
-      });
-    }
-  }
-  return fs2;
-}
-function enqueue(elem) {
-  debug$2("ENQUEUE", elem[0].name, elem[1]);
-  fs$j[gracefulQueue].push(elem);
-  retry();
-}
-var retryTimer;
-function resetQueue() {
-  var now = Date.now();
-  for (var i = 0; i < fs$j[gracefulQueue].length; ++i) {
-    if (fs$j[gracefulQueue][i].length > 2) {
-      fs$j[gracefulQueue][i][3] = now;
-      fs$j[gracefulQueue][i][4] = now;
-    }
-  }
-  retry();
-}
-function retry() {
-  clearTimeout(retryTimer);
-  retryTimer = void 0;
-  if (fs$j[gracefulQueue].length === 0)
-    return;
-  var elem = fs$j[gracefulQueue].shift();
-  var fn = elem[0];
-  var args = elem[1];
-  var err = elem[2];
-  var startTime = elem[3];
-  var lastTime = elem[4];
-  if (startTime === void 0) {
-    debug$2("RETRY", fn.name, args);
-    fn.apply(null, args);
-  } else if (Date.now() - startTime >= 6e4) {
-    debug$2("TIMEOUT", fn.name, args);
-    var cb = args.pop();
-    if (typeof cb === "function")
-      cb.call(null, err);
-  } else {
-    var sinceAttempt = Date.now() - lastTime;
-    var sinceStart = Math.max(lastTime - startTime, 1);
-    var desiredDelay = Math.min(sinceStart * 1.2, 100);
-    if (sinceAttempt >= desiredDelay) {
-      debug$2("RETRY", fn.name, args);
-      fn.apply(null, args.concat([startTime]));
-    } else {
-      fs$j[gracefulQueue].push(elem);
-    }
-  }
-  if (retryTimer === void 0) {
-    retryTimer = setTimeout(retry, 0);
-  }
-}
-(function(exports$1) {
-  const u2 = universalify.fromCallback;
-  const fs2 = gracefulFs;
-  const api = [
-    "access",
-    "appendFile",
-    "chmod",
-    "chown",
-    "close",
-    "copyFile",
-    "fchmod",
-    "fchown",
-    "fdatasync",
-    "fstat",
-    "fsync",
-    "ftruncate",
-    "futimes",
-    "lchown",
-    "lchmod",
-    "link",
-    "lstat",
-    "mkdir",
-    "mkdtemp",
-    "open",
-    "readFile",
-    "readdir",
-    "readlink",
-    "realpath",
-    "rename",
-    "rmdir",
-    "stat",
-    "symlink",
-    "truncate",
-    "unlink",
-    "utimes",
-    "writeFile"
-  ].filter((key) => {
-    return typeof fs2[key] === "function";
-  });
-  Object.keys(fs2).forEach((key) => {
-    if (key === "promises") {
-      return;
-    }
-    exports$1[key] = fs2[key];
-  });
-  api.forEach((method) => {
-    exports$1[method] = u2(fs2[method]);
-  });
-  exports$1.exists = function(filename, callback) {
-    if (typeof callback === "function") {
-      return fs2.exists(filename, callback);
-    }
-    return new Promise((resolve) => {
-      return fs2.exists(filename, resolve);
-    });
-  };
-  exports$1.read = function(fd, buffer2, offset, length, position2, callback) {
-    if (typeof callback === "function") {
-      return fs2.read(fd, buffer2, offset, length, position2, callback);
-    }
-    return new Promise((resolve, reject) => {
-      fs2.read(fd, buffer2, offset, length, position2, (err, bytesRead, buffer3) => {
-        if (err) return reject(err);
-        resolve({ bytesRead, buffer: buffer3 });
-      });
-    });
-  };
-  exports$1.write = function(fd, buffer2, ...args) {
-    if (typeof args[args.length - 1] === "function") {
-      return fs2.write(fd, buffer2, ...args);
-    }
-    return new Promise((resolve, reject) => {
-      fs2.write(fd, buffer2, ...args, (err, bytesWritten, buffer3) => {
-        if (err) return reject(err);
-        resolve({ bytesWritten, buffer: buffer3 });
-      });
-    });
-  };
-  if (typeof fs2.realpath.native === "function") {
-    exports$1.realpath.native = u2(fs2.realpath.native);
-  }
-})(fs$k);
-const path$g = path$h;
-function getRootPath(p) {
-  p = path$g.normalize(path$g.resolve(p)).split(path$g.sep);
-  if (p.length > 0) return p[0];
-  return null;
-}
-const INVALID_PATH_CHARS = /[<>:"|?*]/;
-function invalidWin32Path$2(p) {
-  const rp = getRootPath(p);
-  p = p.replace(rp, "");
-  return INVALID_PATH_CHARS.test(p);
-}
-var win32 = {
-  invalidWin32Path: invalidWin32Path$2
-};
-const fs$i = gracefulFs;
-const path$f = path$h;
-const invalidWin32Path$1 = win32.invalidWin32Path;
-const o777$1 = parseInt("0777", 8);
-function mkdirs$2(p, opts, callback, made) {
-  if (typeof opts === "function") {
-    callback = opts;
-    opts = {};
-  } else if (!opts || typeof opts !== "object") {
-    opts = { mode: opts };
-  }
-  if (process.platform === "win32" && invalidWin32Path$1(p)) {
-    const errInval = new Error(p + " contains invalid WIN32 path characters.");
-    errInval.code = "EINVAL";
-    return callback(errInval);
-  }
-  let mode = opts.mode;
-  const xfs = opts.fs || fs$i;
-  if (mode === void 0) {
-    mode = o777$1 & ~process.umask();
-  }
-  if (!made) made = null;
-  callback = callback || function() {
-  };
-  p = path$f.resolve(p);
-  xfs.mkdir(p, mode, (er) => {
-    if (!er) {
-      made = made || p;
-      return callback(null, made);
-    }
-    switch (er.code) {
-      case "ENOENT":
-        if (path$f.dirname(p) === p) return callback(er);
-        mkdirs$2(path$f.dirname(p), opts, (er2, made2) => {
-          if (er2) callback(er2, made2);
-          else mkdirs$2(p, opts, callback, made2);
-        });
-        break;
-      default:
-        xfs.stat(p, (er2, stat2) => {
-          if (er2 || !stat2.isDirectory()) callback(er, made);
-          else callback(null, made);
-        });
-        break;
-    }
-  });
-}
-var mkdirs_1$1 = mkdirs$2;
-const fs$h = gracefulFs;
-const path$e = path$h;
-const invalidWin32Path = win32.invalidWin32Path;
-const o777 = parseInt("0777", 8);
-function mkdirsSync$2(p, opts, made) {
-  if (!opts || typeof opts !== "object") {
-    opts = { mode: opts };
-  }
-  let mode = opts.mode;
-  const xfs = opts.fs || fs$h;
-  if (process.platform === "win32" && invalidWin32Path(p)) {
-    const errInval = new Error(p + " contains invalid WIN32 path characters.");
-    errInval.code = "EINVAL";
-    throw errInval;
-  }
-  if (mode === void 0) {
-    mode = o777 & ~process.umask();
-  }
-  if (!made) made = null;
-  p = path$e.resolve(p);
-  try {
-    xfs.mkdirSync(p, mode);
-    made = made || p;
-  } catch (err0) {
-    if (err0.code === "ENOENT") {
-      if (path$e.dirname(p) === p) throw err0;
-      made = mkdirsSync$2(path$e.dirname(p), opts, made);
-      mkdirsSync$2(p, opts, made);
-    } else {
-      let stat2;
-      try {
-        stat2 = xfs.statSync(p);
-      } catch (err1) {
-        throw err0;
-      }
-      if (!stat2.isDirectory()) throw err0;
-    }
-  }
-  return made;
-}
-var mkdirsSync_1 = mkdirsSync$2;
-const u$b = universalify.fromCallback;
-const mkdirs$1 = u$b(mkdirs_1$1);
-const mkdirsSync$1 = mkdirsSync_1;
-var mkdirs_1 = {
-  mkdirs: mkdirs$1,
-  mkdirsSync: mkdirsSync$1,
-  // alias
-  mkdirp: mkdirs$1,
-  mkdirpSync: mkdirsSync$1,
-  ensureDir: mkdirs$1,
-  ensureDirSync: mkdirsSync$1
-};
-const fs$g = gracefulFs;
-function utimesMillis(path2, atime, mtime, callback) {
-  fs$g.open(path2, "r+", (err, fd) => {
-    if (err) return callback(err);
-    fs$g.futimes(fd, atime, mtime, (futimesErr) => {
-      fs$g.close(fd, (closeErr) => {
-        if (callback) callback(futimesErr || closeErr);
-      });
-    });
-  });
-}
-function utimesMillisSync(path2, atime, mtime) {
-  const fd = fs$g.openSync(path2, "r+");
-  fs$g.futimesSync(fd, atime, mtime);
-  return fs$g.closeSync(fd);
-}
-var utimes$1 = {
-  utimesMillis,
-  utimesMillisSync
-};
-const fs$f = gracefulFs;
-const path$d = path$h;
-const NODE_VERSION_MAJOR_WITH_BIGINT = 10;
-const NODE_VERSION_MINOR_WITH_BIGINT = 5;
-const NODE_VERSION_PATCH_WITH_BIGINT = 0;
-const nodeVersion = process.versions.node.split(".");
-const nodeVersionMajor = Number.parseInt(nodeVersion[0], 10);
-const nodeVersionMinor = Number.parseInt(nodeVersion[1], 10);
-const nodeVersionPatch = Number.parseInt(nodeVersion[2], 10);
-function nodeSupportsBigInt() {
-  if (nodeVersionMajor > NODE_VERSION_MAJOR_WITH_BIGINT) {
-    return true;
-  } else if (nodeVersionMajor === NODE_VERSION_MAJOR_WITH_BIGINT) {
-    if (nodeVersionMinor > NODE_VERSION_MINOR_WITH_BIGINT) {
-      return true;
-    } else if (nodeVersionMinor === NODE_VERSION_MINOR_WITH_BIGINT) {
-      if (nodeVersionPatch >= NODE_VERSION_PATCH_WITH_BIGINT) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-function getStats$2(src, dest, cb) {
-  if (nodeSupportsBigInt()) {
-    fs$f.stat(src, { bigint: true }, (err, srcStat) => {
-      if (err) return cb(err);
-      fs$f.stat(dest, { bigint: true }, (err2, destStat) => {
-        if (err2) {
-          if (err2.code === "ENOENT") return cb(null, { srcStat, destStat: null });
-          return cb(err2);
-        }
-        return cb(null, { srcStat, destStat });
-      });
-    });
-  } else {
-    fs$f.stat(src, (err, srcStat) => {
-      if (err) return cb(err);
-      fs$f.stat(dest, (err2, destStat) => {
-        if (err2) {
-          if (err2.code === "ENOENT") return cb(null, { srcStat, destStat: null });
-          return cb(err2);
-        }
-        return cb(null, { srcStat, destStat });
-      });
-    });
-  }
-}
-function getStatsSync(src, dest) {
-  let srcStat, destStat;
-  if (nodeSupportsBigInt()) {
-    srcStat = fs$f.statSync(src, { bigint: true });
-  } else {
-    srcStat = fs$f.statSync(src);
-  }
-  try {
-    if (nodeSupportsBigInt()) {
-      destStat = fs$f.statSync(dest, { bigint: true });
-    } else {
-      destStat = fs$f.statSync(dest);
-    }
-  } catch (err) {
-    if (err.code === "ENOENT") return { srcStat, destStat: null };
-    throw err;
-  }
-  return { srcStat, destStat };
-}
-function checkPaths(src, dest, funcName, cb) {
-  getStats$2(src, dest, (err, stats) => {
-    if (err) return cb(err);
-    const { srcStat, destStat } = stats;
-    if (destStat && destStat.ino && destStat.dev && destStat.ino === srcStat.ino && destStat.dev === srcStat.dev) {
-      return cb(new Error("Source and destination must not be the same."));
-    }
-    if (srcStat.isDirectory() && isSrcSubdir(src, dest)) {
-      return cb(new Error(errMsg(src, dest, funcName)));
-    }
-    return cb(null, { srcStat, destStat });
-  });
-}
-function checkPathsSync(src, dest, funcName) {
-  const { srcStat, destStat } = getStatsSync(src, dest);
-  if (destStat && destStat.ino && destStat.dev && destStat.ino === srcStat.ino && destStat.dev === srcStat.dev) {
-    throw new Error("Source and destination must not be the same.");
-  }
-  if (srcStat.isDirectory() && isSrcSubdir(src, dest)) {
-    throw new Error(errMsg(src, dest, funcName));
-  }
-  return { srcStat, destStat };
-}
-function checkParentPaths(src, srcStat, dest, funcName, cb) {
-  const srcParent = path$d.resolve(path$d.dirname(src));
-  const destParent = path$d.resolve(path$d.dirname(dest));
-  if (destParent === srcParent || destParent === path$d.parse(destParent).root) return cb();
-  if (nodeSupportsBigInt()) {
-    fs$f.stat(destParent, { bigint: true }, (err, destStat) => {
-      if (err) {
-        if (err.code === "ENOENT") return cb();
-        return cb(err);
-      }
-      if (destStat.ino && destStat.dev && destStat.ino === srcStat.ino && destStat.dev === srcStat.dev) {
-        return cb(new Error(errMsg(src, dest, funcName)));
-      }
-      return checkParentPaths(src, srcStat, destParent, funcName, cb);
-    });
-  } else {
-    fs$f.stat(destParent, (err, destStat) => {
-      if (err) {
-        if (err.code === "ENOENT") return cb();
-        return cb(err);
-      }
-      if (destStat.ino && destStat.dev && destStat.ino === srcStat.ino && destStat.dev === srcStat.dev) {
-        return cb(new Error(errMsg(src, dest, funcName)));
-      }
-      return checkParentPaths(src, srcStat, destParent, funcName, cb);
-    });
-  }
-}
-function checkParentPathsSync(src, srcStat, dest, funcName) {
-  const srcParent = path$d.resolve(path$d.dirname(src));
-  const destParent = path$d.resolve(path$d.dirname(dest));
-  if (destParent === srcParent || destParent === path$d.parse(destParent).root) return;
-  let destStat;
-  try {
-    if (nodeSupportsBigInt()) {
-      destStat = fs$f.statSync(destParent, { bigint: true });
-    } else {
-      destStat = fs$f.statSync(destParent);
-    }
-  } catch (err) {
-    if (err.code === "ENOENT") return;
-    throw err;
-  }
-  if (destStat.ino && destStat.dev && destStat.ino === srcStat.ino && destStat.dev === srcStat.dev) {
-    throw new Error(errMsg(src, dest, funcName));
-  }
-  return checkParentPathsSync(src, srcStat, destParent, funcName);
-}
-function isSrcSubdir(src, dest) {
-  const srcArr = path$d.resolve(src).split(path$d.sep).filter((i) => i);
-  const destArr = path$d.resolve(dest).split(path$d.sep).filter((i) => i);
-  return srcArr.reduce((acc, cur, i) => acc && destArr[i] === cur, true);
-}
-function errMsg(src, dest, funcName) {
-  return `Cannot ${funcName} '${src}' to a subdirectory of itself, '${dest}'.`;
-}
-var stat$4 = {
-  checkPaths,
-  checkPathsSync,
-  checkParentPaths,
-  checkParentPathsSync,
-  isSrcSubdir
-};
-var buffer;
-var hasRequiredBuffer;
-function requireBuffer() {
-  if (hasRequiredBuffer) return buffer;
-  hasRequiredBuffer = 1;
-  buffer = function(size) {
-    if (typeof Buffer.allocUnsafe === "function") {
-      try {
-        return Buffer.allocUnsafe(size);
-      } catch (e) {
-        return new Buffer(size);
-      }
-    }
-    return new Buffer(size);
-  };
-  return buffer;
-}
-const fs$e = gracefulFs;
-const path$c = path$h;
-const mkdirpSync$1 = mkdirs_1.mkdirsSync;
-const utimesSync = utimes$1.utimesMillisSync;
-const stat$3 = stat$4;
-function copySync$2(src, dest, opts) {
-  if (typeof opts === "function") {
-    opts = { filter: opts };
-  }
-  opts = opts || {};
-  opts.clobber = "clobber" in opts ? !!opts.clobber : true;
-  opts.overwrite = "overwrite" in opts ? !!opts.overwrite : opts.clobber;
-  if (opts.preserveTimestamps && process.arch === "ia32") {
-    console.warn(`fs-extra: Using the preserveTimestamps option in 32-bit node is not recommended;
-
-    see https://github.com/jprichardson/node-fs-extra/issues/269`);
-  }
-  const { srcStat, destStat } = stat$3.checkPathsSync(src, dest, "copy");
-  stat$3.checkParentPathsSync(src, srcStat, dest, "copy");
-  return handleFilterAndCopy(destStat, src, dest, opts);
-}
-function handleFilterAndCopy(destStat, src, dest, opts) {
-  if (opts.filter && !opts.filter(src, dest)) return;
-  const destParent = path$c.dirname(dest);
-  if (!fs$e.existsSync(destParent)) mkdirpSync$1(destParent);
-  return startCopy$1(destStat, src, dest, opts);
-}
-function startCopy$1(destStat, src, dest, opts) {
-  if (opts.filter && !opts.filter(src, dest)) return;
-  return getStats$1(destStat, src, dest, opts);
-}
-function getStats$1(destStat, src, dest, opts) {
-  const statSync = opts.dereference ? fs$e.statSync : fs$e.lstatSync;
-  const srcStat = statSync(src);
-  if (srcStat.isDirectory()) return onDir$1(srcStat, destStat, src, dest, opts);
-  else if (srcStat.isFile() || srcStat.isCharacterDevice() || srcStat.isBlockDevice()) return onFile$1(srcStat, destStat, src, dest, opts);
-  else if (srcStat.isSymbolicLink()) return onLink$1(destStat, src, dest, opts);
-}
-function onFile$1(srcStat, destStat, src, dest, opts) {
-  if (!destStat) return copyFile$1(srcStat, src, dest, opts);
-  return mayCopyFile$1(srcStat, src, dest, opts);
-}
-function mayCopyFile$1(srcStat, src, dest, opts) {
-  if (opts.overwrite) {
-    fs$e.unlinkSync(dest);
-    return copyFile$1(srcStat, src, dest, opts);
-  } else if (opts.errorOnExist) {
-    throw new Error(`'${dest}' already exists`);
-  }
-}
-function copyFile$1(srcStat, src, dest, opts) {
-  if (typeof fs$e.copyFileSync === "function") {
-    fs$e.copyFileSync(src, dest);
-    fs$e.chmodSync(dest, srcStat.mode);
-    if (opts.preserveTimestamps) {
-      return utimesSync(dest, srcStat.atime, srcStat.mtime);
-    }
-    return;
-  }
-  return copyFileFallback$1(srcStat, src, dest, opts);
-}
-function copyFileFallback$1(srcStat, src, dest, opts) {
-  const BUF_LENGTH = 64 * 1024;
-  const _buff = requireBuffer()(BUF_LENGTH);
-  const fdr = fs$e.openSync(src, "r");
-  const fdw = fs$e.openSync(dest, "w", srcStat.mode);
-  let pos = 0;
-  while (pos < srcStat.size) {
-    const bytesRead = fs$e.readSync(fdr, _buff, 0, BUF_LENGTH, pos);
-    fs$e.writeSync(fdw, _buff, 0, bytesRead);
-    pos += bytesRead;
-  }
-  if (opts.preserveTimestamps) fs$e.futimesSync(fdw, srcStat.atime, srcStat.mtime);
-  fs$e.closeSync(fdr);
-  fs$e.closeSync(fdw);
-}
-function onDir$1(srcStat, destStat, src, dest, opts) {
-  if (!destStat) return mkDirAndCopy$1(srcStat, src, dest, opts);
-  if (destStat && !destStat.isDirectory()) {
-    throw new Error(`Cannot overwrite non-directory '${dest}' with directory '${src}'.`);
-  }
-  return copyDir$1(src, dest, opts);
-}
-function mkDirAndCopy$1(srcStat, src, dest, opts) {
-  fs$e.mkdirSync(dest);
-  copyDir$1(src, dest, opts);
-  return fs$e.chmodSync(dest, srcStat.mode);
-}
-function copyDir$1(src, dest, opts) {
-  fs$e.readdirSync(src).forEach((item) => copyDirItem$1(item, src, dest, opts));
-}
-function copyDirItem$1(item, src, dest, opts) {
-  const srcItem = path$c.join(src, item);
-  const destItem = path$c.join(dest, item);
-  const { destStat } = stat$3.checkPathsSync(srcItem, destItem, "copy");
-  return startCopy$1(destStat, srcItem, destItem, opts);
-}
-function onLink$1(destStat, src, dest, opts) {
-  let resolvedSrc = fs$e.readlinkSync(src);
-  if (opts.dereference) {
-    resolvedSrc = path$c.resolve(process.cwd(), resolvedSrc);
-  }
-  if (!destStat) {
-    return fs$e.symlinkSync(resolvedSrc, dest);
-  } else {
-    let resolvedDest;
-    try {
-      resolvedDest = fs$e.readlinkSync(dest);
-    } catch (err) {
-      if (err.code === "EINVAL" || err.code === "UNKNOWN") return fs$e.symlinkSync(resolvedSrc, dest);
-      throw err;
-    }
-    if (opts.dereference) {
-      resolvedDest = path$c.resolve(process.cwd(), resolvedDest);
-    }
-    if (stat$3.isSrcSubdir(resolvedSrc, resolvedDest)) {
-      throw new Error(`Cannot copy '${resolvedSrc}' to a subdirectory of itself, '${resolvedDest}'.`);
-    }
-    if (fs$e.statSync(dest).isDirectory() && stat$3.isSrcSubdir(resolvedDest, resolvedSrc)) {
-      throw new Error(`Cannot overwrite '${resolvedDest}' with '${resolvedSrc}'.`);
-    }
-    return copyLink$1(resolvedSrc, dest);
-  }
-}
-function copyLink$1(resolvedSrc, dest) {
-  fs$e.unlinkSync(dest);
-  return fs$e.symlinkSync(resolvedSrc, dest);
-}
-var copySync_1 = copySync$2;
-var copySync$1 = {
-  copySync: copySync_1
-};
-const u$a = universalify.fromPromise;
-const fs$d = fs$k;
-function pathExists$8(path2) {
-  return fs$d.access(path2).then(() => true).catch(() => false);
-}
-var pathExists_1 = {
-  pathExists: u$a(pathExists$8),
-  pathExistsSync: fs$d.existsSync
-};
-const fs$c = gracefulFs;
-const path$b = path$h;
-const mkdirp$1 = mkdirs_1.mkdirs;
-const pathExists$7 = pathExists_1.pathExists;
-const utimes = utimes$1.utimesMillis;
-const stat$2 = stat$4;
-function copy$3(src, dest, opts, cb) {
-  if (typeof opts === "function" && !cb) {
-    cb = opts;
-    opts = {};
-  } else if (typeof opts === "function") {
-    opts = { filter: opts };
-  }
-  cb = cb || function() {
-  };
-  opts = opts || {};
-  opts.clobber = "clobber" in opts ? !!opts.clobber : true;
-  opts.overwrite = "overwrite" in opts ? !!opts.overwrite : opts.clobber;
-  if (opts.preserveTimestamps && process.arch === "ia32") {
-    console.warn(`fs-extra: Using the preserveTimestamps option in 32-bit node is not recommended;
-
-    see https://github.com/jprichardson/node-fs-extra/issues/269`);
-  }
-  stat$2.checkPaths(src, dest, "copy", (err, stats) => {
-    if (err) return cb(err);
-    const { srcStat, destStat } = stats;
-    stat$2.checkParentPaths(src, srcStat, dest, "copy", (err2) => {
-      if (err2) return cb(err2);
-      if (opts.filter) return handleFilter(checkParentDir, destStat, src, dest, opts, cb);
-      return checkParentDir(destStat, src, dest, opts, cb);
-    });
-  });
-}
-function checkParentDir(destStat, src, dest, opts, cb) {
-  const destParent = path$b.dirname(dest);
-  pathExists$7(destParent, (err, dirExists) => {
-    if (err) return cb(err);
-    if (dirExists) return startCopy(destStat, src, dest, opts, cb);
-    mkdirp$1(destParent, (err2) => {
-      if (err2) return cb(err2);
-      return startCopy(destStat, src, dest, opts, cb);
-    });
-  });
-}
-function handleFilter(onInclude, destStat, src, dest, opts, cb) {
-  Promise.resolve(opts.filter(src, dest)).then((include) => {
-    if (include) return onInclude(destStat, src, dest, opts, cb);
-    return cb();
-  }, (error) => cb(error));
-}
-function startCopy(destStat, src, dest, opts, cb) {
-  if (opts.filter) return handleFilter(getStats, destStat, src, dest, opts, cb);
-  return getStats(destStat, src, dest, opts, cb);
-}
-function getStats(destStat, src, dest, opts, cb) {
-  const stat2 = opts.dereference ? fs$c.stat : fs$c.lstat;
-  stat2(src, (err, srcStat) => {
-    if (err) return cb(err);
-    if (srcStat.isDirectory()) return onDir(srcStat, destStat, src, dest, opts, cb);
-    else if (srcStat.isFile() || srcStat.isCharacterDevice() || srcStat.isBlockDevice()) return onFile(srcStat, destStat, src, dest, opts, cb);
-    else if (srcStat.isSymbolicLink()) return onLink(destStat, src, dest, opts, cb);
-  });
-}
-function onFile(srcStat, destStat, src, dest, opts, cb) {
-  if (!destStat) return copyFile(srcStat, src, dest, opts, cb);
-  return mayCopyFile(srcStat, src, dest, opts, cb);
-}
-function mayCopyFile(srcStat, src, dest, opts, cb) {
-  if (opts.overwrite) {
-    fs$c.unlink(dest, (err) => {
-      if (err) return cb(err);
-      return copyFile(srcStat, src, dest, opts, cb);
-    });
-  } else if (opts.errorOnExist) {
-    return cb(new Error(`'${dest}' already exists`));
-  } else return cb();
-}
-function copyFile(srcStat, src, dest, opts, cb) {
-  if (typeof fs$c.copyFile === "function") {
-    return fs$c.copyFile(src, dest, (err) => {
-      if (err) return cb(err);
-      return setDestModeAndTimestamps(srcStat, dest, opts, cb);
-    });
-  }
-  return copyFileFallback(srcStat, src, dest, opts, cb);
-}
-function copyFileFallback(srcStat, src, dest, opts, cb) {
-  const rs = fs$c.createReadStream(src);
-  rs.on("error", (err) => cb(err)).once("open", () => {
-    const ws = fs$c.createWriteStream(dest, { mode: srcStat.mode });
-    ws.on("error", (err) => cb(err)).on("open", () => rs.pipe(ws)).once("close", () => setDestModeAndTimestamps(srcStat, dest, opts, cb));
-  });
-}
-function setDestModeAndTimestamps(srcStat, dest, opts, cb) {
-  fs$c.chmod(dest, srcStat.mode, (err) => {
-    if (err) return cb(err);
-    if (opts.preserveTimestamps) {
-      return utimes(dest, srcStat.atime, srcStat.mtime, cb);
-    }
-    return cb();
-  });
-}
-function onDir(srcStat, destStat, src, dest, opts, cb) {
-  if (!destStat) return mkDirAndCopy(srcStat, src, dest, opts, cb);
-  if (destStat && !destStat.isDirectory()) {
-    return cb(new Error(`Cannot overwrite non-directory '${dest}' with directory '${src}'.`));
-  }
-  return copyDir(src, dest, opts, cb);
-}
-function mkDirAndCopy(srcStat, src, dest, opts, cb) {
-  fs$c.mkdir(dest, (err) => {
-    if (err) return cb(err);
-    copyDir(src, dest, opts, (err2) => {
-      if (err2) return cb(err2);
-      return fs$c.chmod(dest, srcStat.mode, cb);
-    });
-  });
-}
-function copyDir(src, dest, opts, cb) {
-  fs$c.readdir(src, (err, items) => {
-    if (err) return cb(err);
-    return copyDirItems(items, src, dest, opts, cb);
-  });
-}
-function copyDirItems(items, src, dest, opts, cb) {
-  const item = items.pop();
-  if (!item) return cb();
-  return copyDirItem(items, item, src, dest, opts, cb);
-}
-function copyDirItem(items, item, src, dest, opts, cb) {
-  const srcItem = path$b.join(src, item);
-  const destItem = path$b.join(dest, item);
-  stat$2.checkPaths(srcItem, destItem, "copy", (err, stats) => {
-    if (err) return cb(err);
-    const { destStat } = stats;
-    startCopy(destStat, srcItem, destItem, opts, (err2) => {
-      if (err2) return cb(err2);
-      return copyDirItems(items, src, dest, opts, cb);
-    });
-  });
-}
-function onLink(destStat, src, dest, opts, cb) {
-  fs$c.readlink(src, (err, resolvedSrc) => {
-    if (err) return cb(err);
-    if (opts.dereference) {
-      resolvedSrc = path$b.resolve(process.cwd(), resolvedSrc);
-    }
-    if (!destStat) {
-      return fs$c.symlink(resolvedSrc, dest, cb);
-    } else {
-      fs$c.readlink(dest, (err2, resolvedDest) => {
-        if (err2) {
-          if (err2.code === "EINVAL" || err2.code === "UNKNOWN") return fs$c.symlink(resolvedSrc, dest, cb);
-          return cb(err2);
-        }
-        if (opts.dereference) {
-          resolvedDest = path$b.resolve(process.cwd(), resolvedDest);
-        }
-        if (stat$2.isSrcSubdir(resolvedSrc, resolvedDest)) {
-          return cb(new Error(`Cannot copy '${resolvedSrc}' to a subdirectory of itself, '${resolvedDest}'.`));
-        }
-        if (destStat.isDirectory() && stat$2.isSrcSubdir(resolvedDest, resolvedSrc)) {
-          return cb(new Error(`Cannot overwrite '${resolvedDest}' with '${resolvedSrc}'.`));
-        }
-        return copyLink(resolvedSrc, dest, cb);
-      });
-    }
-  });
-}
-function copyLink(resolvedSrc, dest, cb) {
-  fs$c.unlink(dest, (err) => {
-    if (err) return cb(err);
-    return fs$c.symlink(resolvedSrc, dest, cb);
-  });
-}
-var copy_1 = copy$3;
-const u$9 = universalify.fromCallback;
-var copy$2 = {
-  copy: u$9(copy_1)
-};
-const fs$b = gracefulFs;
-const path$a = path$h;
-const assert = require$$5;
-const isWindows = process.platform === "win32";
-function defaults(options) {
-  const methods = [
-    "unlink",
-    "chmod",
-    "stat",
-    "lstat",
-    "rmdir",
-    "readdir"
-  ];
-  methods.forEach((m) => {
-    options[m] = options[m] || fs$b[m];
-    m = m + "Sync";
-    options[m] = options[m] || fs$b[m];
-  });
-  options.maxBusyTries = options.maxBusyTries || 3;
-}
-function rimraf$1(p, options, cb) {
-  let busyTries = 0;
-  if (typeof options === "function") {
-    cb = options;
-    options = {};
-  }
-  assert(p, "rimraf: missing path");
-  assert.strictEqual(typeof p, "string", "rimraf: path should be a string");
-  assert.strictEqual(typeof cb, "function", "rimraf: callback function required");
-  assert(options, "rimraf: invalid options argument provided");
-  assert.strictEqual(typeof options, "object", "rimraf: options should be object");
-  defaults(options);
-  rimraf_(p, options, function CB(er) {
-    if (er) {
-      if ((er.code === "EBUSY" || er.code === "ENOTEMPTY" || er.code === "EPERM") && busyTries < options.maxBusyTries) {
-        busyTries++;
-        const time = busyTries * 100;
-        return setTimeout(() => rimraf_(p, options, CB), time);
-      }
-      if (er.code === "ENOENT") er = null;
-    }
-    cb(er);
-  });
-}
-function rimraf_(p, options, cb) {
-  assert(p);
-  assert(options);
-  assert(typeof cb === "function");
-  options.lstat(p, (er, st) => {
-    if (er && er.code === "ENOENT") {
-      return cb(null);
-    }
-    if (er && er.code === "EPERM" && isWindows) {
-      return fixWinEPERM(p, options, er, cb);
-    }
-    if (st && st.isDirectory()) {
-      return rmdir(p, options, er, cb);
-    }
-    options.unlink(p, (er2) => {
-      if (er2) {
-        if (er2.code === "ENOENT") {
-          return cb(null);
-        }
-        if (er2.code === "EPERM") {
-          return isWindows ? fixWinEPERM(p, options, er2, cb) : rmdir(p, options, er2, cb);
-        }
-        if (er2.code === "EISDIR") {
-          return rmdir(p, options, er2, cb);
-        }
-      }
-      return cb(er2);
-    });
-  });
-}
-function fixWinEPERM(p, options, er, cb) {
-  assert(p);
-  assert(options);
-  assert(typeof cb === "function");
-  if (er) {
-    assert(er instanceof Error);
-  }
-  options.chmod(p, 438, (er2) => {
-    if (er2) {
-      cb(er2.code === "ENOENT" ? null : er);
-    } else {
-      options.stat(p, (er3, stats) => {
-        if (er3) {
-          cb(er3.code === "ENOENT" ? null : er);
-        } else if (stats.isDirectory()) {
-          rmdir(p, options, er, cb);
-        } else {
-          options.unlink(p, cb);
-        }
-      });
-    }
-  });
-}
-function fixWinEPERMSync(p, options, er) {
-  let stats;
-  assert(p);
-  assert(options);
-  if (er) {
-    assert(er instanceof Error);
-  }
-  try {
-    options.chmodSync(p, 438);
-  } catch (er2) {
-    if (er2.code === "ENOENT") {
-      return;
-    } else {
-      throw er;
-    }
-  }
-  try {
-    stats = options.statSync(p);
-  } catch (er3) {
-    if (er3.code === "ENOENT") {
-      return;
-    } else {
-      throw er;
-    }
-  }
-  if (stats.isDirectory()) {
-    rmdirSync(p, options, er);
-  } else {
-    options.unlinkSync(p);
-  }
-}
-function rmdir(p, options, originalEr, cb) {
-  assert(p);
-  assert(options);
-  if (originalEr) {
-    assert(originalEr instanceof Error);
-  }
-  assert(typeof cb === "function");
-  options.rmdir(p, (er) => {
-    if (er && (er.code === "ENOTEMPTY" || er.code === "EEXIST" || er.code === "EPERM")) {
-      rmkids(p, options, cb);
-    } else if (er && er.code === "ENOTDIR") {
-      cb(originalEr);
-    } else {
-      cb(er);
-    }
-  });
-}
-function rmkids(p, options, cb) {
-  assert(p);
-  assert(options);
-  assert(typeof cb === "function");
-  options.readdir(p, (er, files) => {
-    if (er) return cb(er);
-    let n = files.length;
-    let errState;
-    if (n === 0) return options.rmdir(p, cb);
-    files.forEach((f) => {
-      rimraf$1(path$a.join(p, f), options, (er2) => {
-        if (errState) {
-          return;
-        }
-        if (er2) return cb(errState = er2);
-        if (--n === 0) {
-          options.rmdir(p, cb);
-        }
-      });
-    });
-  });
-}
-function rimrafSync(p, options) {
-  let st;
-  options = options || {};
-  defaults(options);
-  assert(p, "rimraf: missing path");
-  assert.strictEqual(typeof p, "string", "rimraf: path should be a string");
-  assert(options, "rimraf: missing options");
-  assert.strictEqual(typeof options, "object", "rimraf: options should be object");
-  try {
-    st = options.lstatSync(p);
-  } catch (er) {
-    if (er.code === "ENOENT") {
-      return;
-    }
-    if (er.code === "EPERM" && isWindows) {
-      fixWinEPERMSync(p, options, er);
-    }
-  }
-  try {
-    if (st && st.isDirectory()) {
-      rmdirSync(p, options, null);
-    } else {
-      options.unlinkSync(p);
-    }
-  } catch (er) {
-    if (er.code === "ENOENT") {
-      return;
-    } else if (er.code === "EPERM") {
-      return isWindows ? fixWinEPERMSync(p, options, er) : rmdirSync(p, options, er);
-    } else if (er.code !== "EISDIR") {
-      throw er;
-    }
-    rmdirSync(p, options, er);
-  }
-}
-function rmdirSync(p, options, originalEr) {
-  assert(p);
-  assert(options);
-  if (originalEr) {
-    assert(originalEr instanceof Error);
-  }
-  try {
-    options.rmdirSync(p);
-  } catch (er) {
-    if (er.code === "ENOTDIR") {
-      throw originalEr;
-    } else if (er.code === "ENOTEMPTY" || er.code === "EEXIST" || er.code === "EPERM") {
-      rmkidsSync(p, options);
-    } else if (er.code !== "ENOENT") {
-      throw er;
-    }
-  }
-}
-function rmkidsSync(p, options) {
-  assert(p);
-  assert(options);
-  options.readdirSync(p).forEach((f) => rimrafSync(path$a.join(p, f), options));
-  if (isWindows) {
-    const startTime = Date.now();
-    do {
-      try {
-        const ret = options.rmdirSync(p, options);
-        return ret;
-      } catch (er) {
-      }
-    } while (Date.now() - startTime < 500);
-  } else {
-    const ret = options.rmdirSync(p, options);
-    return ret;
-  }
-}
-var rimraf_1 = rimraf$1;
-rimraf$1.sync = rimrafSync;
-const u$8 = universalify.fromCallback;
-const rimraf = rimraf_1;
-var remove$2 = {
-  remove: u$8(rimraf),
-  removeSync: rimraf.sync
-};
-const u$7 = universalify.fromCallback;
-const fs$a = gracefulFs;
-const path$9 = path$h;
-const mkdir$5 = mkdirs_1;
-const remove$1 = remove$2;
-const emptyDir = u$7(function emptyDir2(dir, callback) {
-  callback = callback || function() {
-  };
-  fs$a.readdir(dir, (err, items) => {
-    if (err) return mkdir$5.mkdirs(dir, callback);
-    items = items.map((item) => path$9.join(dir, item));
-    deleteItem();
-    function deleteItem() {
-      const item = items.pop();
-      if (!item) return callback();
-      remove$1.remove(item, (err2) => {
-        if (err2) return callback(err2);
-        deleteItem();
-      });
-    }
-  });
-});
-function emptyDirSync(dir) {
-  let items;
-  try {
-    items = fs$a.readdirSync(dir);
-  } catch (err) {
-    return mkdir$5.mkdirsSync(dir);
-  }
-  items.forEach((item) => {
-    item = path$9.join(dir, item);
-    remove$1.removeSync(item);
-  });
-}
-var empty = {
-  emptyDirSync,
-  emptydirSync: emptyDirSync,
-  emptyDir,
-  emptydir: emptyDir
-};
-const u$6 = universalify.fromCallback;
-const path$8 = path$h;
-const fs$9 = gracefulFs;
-const mkdir$4 = mkdirs_1;
-const pathExists$6 = pathExists_1.pathExists;
-function createFile(file2, callback) {
-  function makeFile() {
-    fs$9.writeFile(file2, "", (err) => {
-      if (err) return callback(err);
-      callback();
-    });
-  }
-  fs$9.stat(file2, (err, stats) => {
-    if (!err && stats.isFile()) return callback();
-    const dir = path$8.dirname(file2);
-    pathExists$6(dir, (err2, dirExists) => {
-      if (err2) return callback(err2);
-      if (dirExists) return makeFile();
-      mkdir$4.mkdirs(dir, (err3) => {
-        if (err3) return callback(err3);
-        makeFile();
-      });
-    });
-  });
-}
-function createFileSync(file2) {
-  let stats;
-  try {
-    stats = fs$9.statSync(file2);
-  } catch (e) {
-  }
-  if (stats && stats.isFile()) return;
-  const dir = path$8.dirname(file2);
-  if (!fs$9.existsSync(dir)) {
-    mkdir$4.mkdirsSync(dir);
-  }
-  fs$9.writeFileSync(file2, "");
-}
-var file$1 = {
-  createFile: u$6(createFile),
-  createFileSync
-};
-const u$5 = universalify.fromCallback;
-const path$7 = path$h;
-const fs$8 = gracefulFs;
-const mkdir$3 = mkdirs_1;
-const pathExists$5 = pathExists_1.pathExists;
-function createLink(srcpath, dstpath, callback) {
-  function makeLink(srcpath2, dstpath2) {
-    fs$8.link(srcpath2, dstpath2, (err) => {
-      if (err) return callback(err);
-      callback(null);
-    });
-  }
-  pathExists$5(dstpath, (err, destinationExists) => {
-    if (err) return callback(err);
-    if (destinationExists) return callback(null);
-    fs$8.lstat(srcpath, (err2) => {
-      if (err2) {
-        err2.message = err2.message.replace("lstat", "ensureLink");
-        return callback(err2);
-      }
-      const dir = path$7.dirname(dstpath);
-      pathExists$5(dir, (err3, dirExists) => {
-        if (err3) return callback(err3);
-        if (dirExists) return makeLink(srcpath, dstpath);
-        mkdir$3.mkdirs(dir, (err4) => {
-          if (err4) return callback(err4);
-          makeLink(srcpath, dstpath);
-        });
-      });
-    });
-  });
-}
-function createLinkSync(srcpath, dstpath) {
-  const destinationExists = fs$8.existsSync(dstpath);
-  if (destinationExists) return void 0;
-  try {
-    fs$8.lstatSync(srcpath);
-  } catch (err) {
-    err.message = err.message.replace("lstat", "ensureLink");
-    throw err;
-  }
-  const dir = path$7.dirname(dstpath);
-  const dirExists = fs$8.existsSync(dir);
-  if (dirExists) return fs$8.linkSync(srcpath, dstpath);
-  mkdir$3.mkdirsSync(dir);
-  return fs$8.linkSync(srcpath, dstpath);
-}
-var link$1 = {
-  createLink: u$5(createLink),
-  createLinkSync
-};
-const path$6 = path$h;
-const fs$7 = gracefulFs;
-const pathExists$4 = pathExists_1.pathExists;
-function symlinkPaths$1(srcpath, dstpath, callback) {
-  if (path$6.isAbsolute(srcpath)) {
-    return fs$7.lstat(srcpath, (err) => {
-      if (err) {
-        err.message = err.message.replace("lstat", "ensureSymlink");
-        return callback(err);
-      }
-      return callback(null, {
-        "toCwd": srcpath,
-        "toDst": srcpath
-      });
-    });
-  } else {
-    const dstdir = path$6.dirname(dstpath);
-    const relativeToDst = path$6.join(dstdir, srcpath);
-    return pathExists$4(relativeToDst, (err, exists2) => {
-      if (err) return callback(err);
-      if (exists2) {
-        return callback(null, {
-          "toCwd": relativeToDst,
-          "toDst": srcpath
-        });
-      } else {
-        return fs$7.lstat(srcpath, (err2) => {
-          if (err2) {
-            err2.message = err2.message.replace("lstat", "ensureSymlink");
-            return callback(err2);
-          }
-          return callback(null, {
-            "toCwd": srcpath,
-            "toDst": path$6.relative(dstdir, srcpath)
-          });
-        });
-      }
-    });
-  }
-}
-function symlinkPathsSync$1(srcpath, dstpath) {
-  let exists2;
-  if (path$6.isAbsolute(srcpath)) {
-    exists2 = fs$7.existsSync(srcpath);
-    if (!exists2) throw new Error("absolute srcpath does not exist");
-    return {
-      "toCwd": srcpath,
-      "toDst": srcpath
-    };
-  } else {
-    const dstdir = path$6.dirname(dstpath);
-    const relativeToDst = path$6.join(dstdir, srcpath);
-    exists2 = fs$7.existsSync(relativeToDst);
-    if (exists2) {
-      return {
-        "toCwd": relativeToDst,
-        "toDst": srcpath
-      };
-    } else {
-      exists2 = fs$7.existsSync(srcpath);
-      if (!exists2) throw new Error("relative srcpath does not exist");
-      return {
-        "toCwd": srcpath,
-        "toDst": path$6.relative(dstdir, srcpath)
-      };
-    }
-  }
-}
-var symlinkPaths_1 = {
-  symlinkPaths: symlinkPaths$1,
-  symlinkPathsSync: symlinkPathsSync$1
-};
-const fs$6 = gracefulFs;
-function symlinkType$1(srcpath, type2, callback) {
-  callback = typeof type2 === "function" ? type2 : callback;
-  type2 = typeof type2 === "function" ? false : type2;
-  if (type2) return callback(null, type2);
-  fs$6.lstat(srcpath, (err, stats) => {
-    if (err) return callback(null, "file");
-    type2 = stats && stats.isDirectory() ? "dir" : "file";
-    callback(null, type2);
-  });
-}
-function symlinkTypeSync$1(srcpath, type2) {
-  let stats;
-  if (type2) return type2;
-  try {
-    stats = fs$6.lstatSync(srcpath);
-  } catch (e) {
-    return "file";
-  }
-  return stats && stats.isDirectory() ? "dir" : "file";
-}
-var symlinkType_1 = {
-  symlinkType: symlinkType$1,
-  symlinkTypeSync: symlinkTypeSync$1
-};
-const u$4 = universalify.fromCallback;
-const path$5 = path$h;
-const fs$5 = gracefulFs;
-const _mkdirs = mkdirs_1;
-const mkdirs = _mkdirs.mkdirs;
-const mkdirsSync = _mkdirs.mkdirsSync;
-const _symlinkPaths = symlinkPaths_1;
-const symlinkPaths = _symlinkPaths.symlinkPaths;
-const symlinkPathsSync = _symlinkPaths.symlinkPathsSync;
-const _symlinkType = symlinkType_1;
-const symlinkType = _symlinkType.symlinkType;
-const symlinkTypeSync = _symlinkType.symlinkTypeSync;
-const pathExists$3 = pathExists_1.pathExists;
-function createSymlink(srcpath, dstpath, type2, callback) {
-  callback = typeof type2 === "function" ? type2 : callback;
-  type2 = typeof type2 === "function" ? false : type2;
-  pathExists$3(dstpath, (err, destinationExists) => {
-    if (err) return callback(err);
-    if (destinationExists) return callback(null);
-    symlinkPaths(srcpath, dstpath, (err2, relative) => {
-      if (err2) return callback(err2);
-      srcpath = relative.toDst;
-      symlinkType(relative.toCwd, type2, (err3, type3) => {
-        if (err3) return callback(err3);
-        const dir = path$5.dirname(dstpath);
-        pathExists$3(dir, (err4, dirExists) => {
-          if (err4) return callback(err4);
-          if (dirExists) return fs$5.symlink(srcpath, dstpath, type3, callback);
-          mkdirs(dir, (err5) => {
-            if (err5) return callback(err5);
-            fs$5.symlink(srcpath, dstpath, type3, callback);
-          });
-        });
-      });
-    });
-  });
-}
-function createSymlinkSync(srcpath, dstpath, type2) {
-  const destinationExists = fs$5.existsSync(dstpath);
-  if (destinationExists) return void 0;
-  const relative = symlinkPathsSync(srcpath, dstpath);
-  srcpath = relative.toDst;
-  type2 = symlinkTypeSync(relative.toCwd, type2);
-  const dir = path$5.dirname(dstpath);
-  const exists2 = fs$5.existsSync(dir);
-  if (exists2) return fs$5.symlinkSync(srcpath, dstpath, type2);
-  mkdirsSync(dir);
-  return fs$5.symlinkSync(srcpath, dstpath, type2);
-}
-var symlink$1 = {
-  createSymlink: u$4(createSymlink),
-  createSymlinkSync
-};
-const file = file$1;
-const link = link$1;
-const symlink = symlink$1;
-var ensure = {
-  // file
-  createFile: file.createFile,
-  createFileSync: file.createFileSync,
-  ensureFile: file.createFile,
-  ensureFileSync: file.createFileSync,
-  // link
-  createLink: link.createLink,
-  createLinkSync: link.createLinkSync,
-  ensureLink: link.createLink,
-  ensureLinkSync: link.createLinkSync,
-  // symlink
-  createSymlink: symlink.createSymlink,
-  createSymlinkSync: symlink.createSymlinkSync,
-  ensureSymlink: symlink.createSymlink,
-  ensureSymlinkSync: symlink.createSymlinkSync
-};
-var _fs;
-try {
-  _fs = gracefulFs;
-} catch (_) {
-  _fs = fs$l;
-}
-function readFile(file2, options, callback) {
-  if (callback == null) {
-    callback = options;
-    options = {};
-  }
-  if (typeof options === "string") {
-    options = { encoding: options };
-  }
-  options = options || {};
-  var fs2 = options.fs || _fs;
-  var shouldThrow = true;
-  if ("throws" in options) {
-    shouldThrow = options.throws;
-  }
-  fs2.readFile(file2, options, function(err, data) {
-    if (err) return callback(err);
-    data = stripBom(data);
-    var obj;
-    try {
-      obj = JSON.parse(data, options ? options.reviver : null);
-    } catch (err2) {
-      if (shouldThrow) {
-        err2.message = file2 + ": " + err2.message;
-        return callback(err2);
-      } else {
-        return callback(null, null);
-      }
-    }
-    callback(null, obj);
-  });
-}
-function readFileSync(file2, options) {
-  options = options || {};
-  if (typeof options === "string") {
-    options = { encoding: options };
-  }
-  var fs2 = options.fs || _fs;
-  var shouldThrow = true;
-  if ("throws" in options) {
-    shouldThrow = options.throws;
-  }
-  try {
-    var content = fs2.readFileSync(file2, options);
-    content = stripBom(content);
-    return JSON.parse(content, options.reviver);
-  } catch (err) {
-    if (shouldThrow) {
-      err.message = file2 + ": " + err.message;
-      throw err;
-    } else {
-      return null;
-    }
-  }
-}
-function stringify(obj, options) {
-  var spaces;
-  var EOL = "\n";
-  if (typeof options === "object" && options !== null) {
-    if (options.spaces) {
-      spaces = options.spaces;
-    }
-    if (options.EOL) {
-      EOL = options.EOL;
-    }
-  }
-  var str = JSON.stringify(obj, options ? options.replacer : null, spaces);
-  return str.replace(/\n/g, EOL) + EOL;
-}
-function writeFile(file2, obj, options, callback) {
-  if (callback == null) {
-    callback = options;
-    options = {};
-  }
-  options = options || {};
-  var fs2 = options.fs || _fs;
-  var str = "";
-  try {
-    str = stringify(obj, options);
-  } catch (err) {
-    if (callback) callback(err, null);
-    return;
-  }
-  fs2.writeFile(file2, str, options, callback);
-}
-function writeFileSync(file2, obj, options) {
-  options = options || {};
-  var fs2 = options.fs || _fs;
-  var str = stringify(obj, options);
-  return fs2.writeFileSync(file2, str, options);
-}
-function stripBom(content) {
-  if (Buffer.isBuffer(content)) content = content.toString("utf8");
-  content = content.replace(/^\uFEFF/, "");
-  return content;
-}
-var jsonfile$1 = {
-  readFile,
-  readFileSync,
-  writeFile,
-  writeFileSync
-};
-var jsonfile_1 = jsonfile$1;
-const u$3 = universalify.fromCallback;
-const jsonFile$3 = jsonfile_1;
-var jsonfile = {
-  // jsonfile exports
-  readJson: u$3(jsonFile$3.readFile),
-  readJsonSync: jsonFile$3.readFileSync,
-  writeJson: u$3(jsonFile$3.writeFile),
-  writeJsonSync: jsonFile$3.writeFileSync
-};
-const path$4 = path$h;
-const mkdir$2 = mkdirs_1;
-const pathExists$2 = pathExists_1.pathExists;
-const jsonFile$2 = jsonfile;
-function outputJson(file2, data, options, callback) {
-  if (typeof options === "function") {
-    callback = options;
-    options = {};
-  }
-  const dir = path$4.dirname(file2);
-  pathExists$2(dir, (err, itDoes) => {
-    if (err) return callback(err);
-    if (itDoes) return jsonFile$2.writeJson(file2, data, options, callback);
-    mkdir$2.mkdirs(dir, (err2) => {
-      if (err2) return callback(err2);
-      jsonFile$2.writeJson(file2, data, options, callback);
-    });
-  });
-}
-var outputJson_1 = outputJson;
-const fs$4 = gracefulFs;
-const path$3 = path$h;
-const mkdir$1 = mkdirs_1;
-const jsonFile$1 = jsonfile;
-function outputJsonSync(file2, data, options) {
-  const dir = path$3.dirname(file2);
-  if (!fs$4.existsSync(dir)) {
-    mkdir$1.mkdirsSync(dir);
-  }
-  jsonFile$1.writeJsonSync(file2, data, options);
-}
-var outputJsonSync_1 = outputJsonSync;
-const u$2 = universalify.fromCallback;
-const jsonFile = jsonfile;
-jsonFile.outputJson = u$2(outputJson_1);
-jsonFile.outputJsonSync = outputJsonSync_1;
-jsonFile.outputJSON = jsonFile.outputJson;
-jsonFile.outputJSONSync = jsonFile.outputJsonSync;
-jsonFile.writeJSON = jsonFile.writeJson;
-jsonFile.writeJSONSync = jsonFile.writeJsonSync;
-jsonFile.readJSON = jsonFile.readJson;
-jsonFile.readJSONSync = jsonFile.readJsonSync;
-var json = jsonFile;
-const fs$3 = gracefulFs;
-const path$2 = path$h;
-const copySync = copySync$1.copySync;
-const removeSync = remove$2.removeSync;
-const mkdirpSync = mkdirs_1.mkdirpSync;
-const stat$1 = stat$4;
-function moveSync$1(src, dest, opts) {
-  opts = opts || {};
-  const overwrite = opts.overwrite || opts.clobber || false;
-  const { srcStat } = stat$1.checkPathsSync(src, dest, "move");
-  stat$1.checkParentPathsSync(src, srcStat, dest, "move");
-  mkdirpSync(path$2.dirname(dest));
-  return doRename$1(src, dest, overwrite);
-}
-function doRename$1(src, dest, overwrite) {
-  if (overwrite) {
-    removeSync(dest);
-    return rename$1(src, dest, overwrite);
-  }
-  if (fs$3.existsSync(dest)) throw new Error("dest already exists.");
-  return rename$1(src, dest, overwrite);
-}
-function rename$1(src, dest, overwrite) {
-  try {
-    fs$3.renameSync(src, dest);
-  } catch (err) {
-    if (err.code !== "EXDEV") throw err;
-    return moveAcrossDevice$1(src, dest, overwrite);
-  }
-}
-function moveAcrossDevice$1(src, dest, overwrite) {
-  const opts = {
-    overwrite,
-    errorOnExist: true
-  };
-  copySync(src, dest, opts);
-  return removeSync(src);
-}
-var moveSync_1 = moveSync$1;
-var moveSync = {
-  moveSync: moveSync_1
-};
-const fs$2 = gracefulFs;
-const path$1 = path$h;
-const copy$1 = copy$2.copy;
-const remove = remove$2.remove;
-const mkdirp = mkdirs_1.mkdirp;
-const pathExists$1 = pathExists_1.pathExists;
-const stat = stat$4;
-function move$1(src, dest, opts, cb) {
-  if (typeof opts === "function") {
-    cb = opts;
-    opts = {};
-  }
-  const overwrite = opts.overwrite || opts.clobber || false;
-  stat.checkPaths(src, dest, "move", (err, stats) => {
-    if (err) return cb(err);
-    const { srcStat } = stats;
-    stat.checkParentPaths(src, srcStat, dest, "move", (err2) => {
-      if (err2) return cb(err2);
-      mkdirp(path$1.dirname(dest), (err3) => {
-        if (err3) return cb(err3);
-        return doRename(src, dest, overwrite, cb);
-      });
-    });
-  });
-}
-function doRename(src, dest, overwrite, cb) {
-  if (overwrite) {
-    return remove(dest, (err) => {
-      if (err) return cb(err);
-      return rename(src, dest, overwrite, cb);
-    });
-  }
-  pathExists$1(dest, (err, destExists) => {
-    if (err) return cb(err);
-    if (destExists) return cb(new Error("dest already exists."));
-    return rename(src, dest, overwrite, cb);
-  });
-}
-function rename(src, dest, overwrite, cb) {
-  fs$2.rename(src, dest, (err) => {
-    if (!err) return cb();
-    if (err.code !== "EXDEV") return cb(err);
-    return moveAcrossDevice(src, dest, overwrite, cb);
-  });
-}
-function moveAcrossDevice(src, dest, overwrite, cb) {
-  const opts = {
-    overwrite,
-    errorOnExist: true
-  };
-  copy$1(src, dest, opts, (err) => {
-    if (err) return cb(err);
-    return remove(src, cb);
-  });
-}
-var move_1 = move$1;
-const u$1 = universalify.fromCallback;
-var move = {
-  move: u$1(move_1)
-};
-const u = universalify.fromCallback;
-const fs$1 = gracefulFs;
-const path = path$h;
-const mkdir = mkdirs_1;
-const pathExists = pathExists_1.pathExists;
-function outputFile(file2, data, encoding, callback) {
-  if (typeof encoding === "function") {
-    callback = encoding;
-    encoding = "utf8";
-  }
-  const dir = path.dirname(file2);
-  pathExists(dir, (err, itDoes) => {
-    if (err) return callback(err);
-    if (itDoes) return fs$1.writeFile(file2, data, encoding, callback);
-    mkdir.mkdirs(dir, (err2) => {
-      if (err2) return callback(err2);
-      fs$1.writeFile(file2, data, encoding, callback);
-    });
-  });
-}
-function outputFileSync(file2, ...args) {
-  const dir = path.dirname(file2);
-  if (fs$1.existsSync(dir)) {
-    return fs$1.writeFileSync(file2, ...args);
-  }
-  mkdir.mkdirsSync(dir);
-  fs$1.writeFileSync(file2, ...args);
-}
-var output = {
-  outputFile: u(outputFile),
-  outputFileSync
-};
-(function(module2) {
-  module2.exports = Object.assign(
-    {},
-    // Export promiseified graceful-fs:
-    fs$k,
-    // Export extra methods:
-    copySync$1,
-    copy$2,
-    empty,
-    ensure,
-    json,
-    mkdirs_1,
-    moveSync,
-    move,
-    output,
-    pathExists_1,
-    remove$2
-  );
-  const fs2 = fs$l;
-  if (Object.getOwnPropertyDescriptor(fs2, "promises")) {
-    Object.defineProperty(module2.exports, "promises", {
-      get() {
-        return fs2.promises;
-      }
-    });
-  }
-})(lib$2);
-var libExports = lib$2.exports;
-const fs = /* @__PURE__ */ getDefaultExportFromCjs(libExports);
 (async () => {
   try {
     const fixPath = (await import("fix-path")).default;
@@ -2517,7 +164,7 @@ class AdapterHandler {
    */
   async getAdapterInfo(adapter, adapterPath) {
     let adapterInfo;
-    const infoPath = adapterPath || path$h.resolve(this.baseDir, "node_modules", adapter, "plugin.json");
+    const infoPath = adapterPath || path.resolve(this.baseDir, "node_modules", adapter, "plugin.json");
     if (await fs.pathExists(infoPath)) {
       adapterInfo = JSON.parse(
         fs.readFileSync(infoPath, "utf-8")
@@ -2583,18 +230,18 @@ class AdapterHandler {
         cwd: this.baseDir
       });
       console.log(args);
-      let output2 = "";
+      let output = "";
       npm.stdout.on("data", (data) => {
-        output2 += data;
+        output += data;
       }).pipe(process.stdout);
       npm.stderr.on("data", (data) => {
-        output2 += data;
+        output += data;
       }).pipe(process.stderr);
       npm.on("close", (code2) => {
         if (!code2) {
-          resolve({ code: 0, data: output2 });
+          resolve({ code: 0, data: output });
         } else {
-          reject({ code: code2, data: output2 });
+          reject({ code: code2, data: output });
         }
       });
     });
@@ -2687,10 +334,10 @@ class DB {
     this.docMaxByteLength = 2 * 1024 * 1024;
     this.docAttachmentMaxByteLength = 20 * 1024 * 1024;
     this.dbpath = dbPath;
-    this.defaultDbName = path$h.join(dbPath, "default");
+    this.defaultDbName = path.join(dbPath, "default");
   }
   init() {
-    fs$l.existsSync(this.dbpath) || fs$l.mkdirSync(this.dbpath);
+    fs$1.existsSync(this.dbpath) || fs$1.mkdirSync(this.dbpath);
     this.pouchDB = new PouchDB(this.defaultDbName, { auto_compaction: true });
   }
   getDocId(name, id) {
@@ -2833,8 +480,8 @@ class DB {
     await webdavClient.createReadStream(this.pouchDB);
   }
   async postAttachment(name, docId, attachment, type2) {
-    const buffer2 = Buffer.from(attachment);
-    if (buffer2.byteLength > this.docAttachmentMaxByteLength)
+    const buffer = Buffer.from(attachment);
+    if (buffer.byteLength > this.docAttachmentMaxByteLength)
       return this.errorInfo(
         "exception",
         "attachment data up to " + this.docAttachmentMaxByteLength / 1024 / 1024 + "M"
@@ -2842,7 +489,7 @@ class DB {
     try {
       const result = await this.pouchDB.put({
         _id: this.getDocId(name, docId),
-        _attachments: { 0: { data: buffer2, content_type: type2 } }
+        _attachments: { 0: { data: buffer, content_type: type2 } }
       });
       result.id = this.replaceDocId(name, result.id);
       return result;
@@ -2904,15 +551,21 @@ const screenCapture = (mainWindow, cb) => {
     }).show();
   }
 };
-const dbInstance = new DB(electron.app.getPath("userData"));
-dbInstance.init();
+let dbInstance = null;
+const getDbInstance = () => {
+  if (!dbInstance) {
+    dbInstance = new DB(electron.app.getPath("userData"));
+    dbInstance.init();
+  }
+  return dbInstance;
+};
 class DBInstance {
   currentPlugin = null;
   DBKEY = "RUBICK_DB_DEFAULT";
   DB_INFO_KET = "RUBICK_PLUGIN_INFO";
   async dbPut({ data }) {
     if (this.currentPlugin && this.currentPlugin.name) {
-      let dbInfo = await dbInstance.get(this.DBKEY, this.DB_INFO_KET);
+      let dbInfo = await getDbInstance().get(this.DBKEY, this.DB_INFO_KET);
       if (!dbInfo) {
         dbInfo = { data: [], _id: this.DB_INFO_KET };
       }
@@ -2927,34 +580,34 @@ class DBInstance {
           keys: [data.data._id]
         });
       }
-      dbInstance.put(this.DBKEY, dbInfo);
+      getDbInstance().put(this.DBKEY, dbInfo);
     }
-    return dbInstance.put(this.DBKEY, data.data);
+    return getDbInstance().put(this.DBKEY, data.data);
   }
   dbGet({ data }) {
-    return dbInstance.get(this.DBKEY, data.id);
+    return getDbInstance().get(this.DBKEY, data.id);
   }
   dbRemove({ data }) {
-    return dbInstance.remove(this.DBKEY, data.doc);
+    return getDbInstance().remove(this.DBKEY, data.doc);
   }
   dbBulkDocs({ data }) {
-    return dbInstance.bulkDocs(this.DBKEY, data.docs);
+    return getDbInstance().bulkDocs(this.DBKEY, data.docs);
   }
   dbAllDocs({ data }) {
-    return dbInstance.allDocs(this.DBKEY, data.key);
+    return getDbInstance().allDocs(this.DBKEY, data.key);
   }
   dbDump({ data }) {
-    return dbInstance.dumpDb(data.target);
+    return getDbInstance().dumpDb(data.target);
   }
   dbImport({ data }) {
-    return dbInstance.importDb(data.target);
+    return getDbInstance().importDb(data.target);
   }
   dbPostAttachment({ data }) {
     const { docId, attachment, type: type2 } = data;
-    return dbInstance.postAttachment(this.DBKEY, docId, attachment, type2);
+    return getDbInstance().postAttachment(this.DBKEY, docId, attachment, type2);
   }
   dbGetAttachment({ data }) {
-    return dbInstance.getAttachment(this.DBKEY, data.docId);
+    return getDbInstance().getAttachment(this.DBKEY, data.docId);
   }
   async dbGetAttachmentType({ data }) {
     const res = await this.dbGet(data.docId);
@@ -3044,7 +697,7 @@ const main = () => {
     if (devServerUrl) {
       win2.loadURL(devServerUrl);
     } else {
-      win2.loadFile(path$h.join(__dirname, "..", "..", "renderer", "index.html"));
+      win2.loadFile(path.join(__dirname, "..", "..", "renderer", "index.html"));
     }
     electron.protocol.interceptFileProtocol("image", (req, callback) => {
       const url = req.url.substr(8);
@@ -3092,7 +745,7 @@ const main = () => {
   };
 };
 const appPath = electron.app.getPath("userData");
-const PLUGIN_INSTALL_DIR = path$h.join(appPath, "./rubick-plugins-new");
+const PLUGIN_INSTALL_DIR = path.join(appPath, "./rubick-plugins-new");
 const DECODE_KEY = {
   Backspace: "Backspace",
   Tab: "Tab",
@@ -3182,14 +835,14 @@ const getPluginPreloadPath = (plugin, pluginIndexPath) => {
       return resolveStatic("feature/public/preload.js");
     }
     if (tplPath) {
-      return path$h.resolve(getRelativePath(indexPath), `./`, preload);
+      return path.resolve(getRelativePath(indexPath), `./`, preload);
     }
-    return path$h.resolve(getRelativePath(pluginIndexPath), `../`, preload);
+    return path.resolve(getRelativePath(pluginIndexPath), `../`, preload);
   }
   if (tplPath) {
-    return path$h.resolve(getRelativePath(indexPath), `./`, preload);
+    return path.resolve(getRelativePath(indexPath), `./`, preload);
   }
-  return path$h.resolve(getRelativePath(pluginIndexPath), `../`, preload);
+  return path.resolve(getRelativePath(pluginIndexPath), `../`, preload);
 };
 const runner = () => {
   let view;
@@ -3233,15 +886,15 @@ const runner = () => {
     let preloadPath;
     if (isDev() && development) {
       pluginIndexPath = development;
-      const pluginPath = path$h.resolve(PLUGIN_INSTALL_DIR, "node_modules", name);
-      preloadPath = `file://${path$h.join(pluginPath, "./", main2)}`;
+      const pluginPath = path.resolve(PLUGIN_INSTALL_DIR, "node_modules", name);
+      preloadPath = `file://${path.join(pluginPath, "./", main2)}`;
     }
     if (plugin.name === "rubick-system-feature" && !pluginIndexPath) {
       pluginIndexPath = `file://${resolveStatic("feature/index.html")}`;
     }
     if (!pluginIndexPath) {
-      const pluginPath = path$h.resolve(PLUGIN_INSTALL_DIR, "node_modules", name);
-      pluginIndexPath = `file://${path$h.join(pluginPath, "./", main2)}`;
+      const pluginPath = path.resolve(PLUGIN_INSTALL_DIR, "node_modules", name);
+      pluginIndexPath = `file://${path.join(pluginPath, "./", main2)}`;
     }
     const preload = getPluginPreloadPath(plugin, preloadPath || pluginIndexPath);
     const ses = electron.session.fromPartition("<" + name + ">");
@@ -3540,6 +1193,10 @@ const guide = () => {
     getWindow
   };
 };
+var commonjsGlobal = typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : {};
+function getDefaultExportFromCjs(x) {
+  return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, "default") ? x["default"] : x;
+}
 var plist$2 = {};
 var parse$9 = {};
 var lib$1 = {};
@@ -4160,7 +1817,7 @@ function _onAddAttribute(doc, el, newAttr) {
     el._nsMap[newAttr.prefix ? newAttr.localName : ""] = newAttr.value;
   }
 }
-function _onRemoveAttribute(doc, el, newAttr, remove2) {
+function _onRemoveAttribute(doc, el, newAttr, remove) {
   doc && doc._inc++;
   var ns = newAttr.namespaceURI;
   if (ns === NAMESPACE$2.XMLNS) {
@@ -4846,9 +2503,9 @@ function serializeToString(node, buf, isHTML, nodeFilter, visibleNamespaces) {
       var prefixedNodeName = nodeName;
       if (!isHTML && !node.prefix && node.namespaceURI) {
         var defaultNS;
-        for (var ai = 0; ai < attrs.length; ai++) {
-          if (attrs.item(ai).name === "xmlns") {
-            defaultNS = attrs.item(ai).value;
+        for (var ai2 = 0; ai2 < attrs.length; ai2++) {
+          if (attrs.item(ai2).name === "xmlns") {
+            defaultNS = attrs.item(ai2).value;
             break;
           }
         }
@@ -8240,12 +5897,12 @@ function tripletToBase64(num) {
 }
 function encodeChunk(uint8, start, end) {
   var tmp;
-  var output2 = [];
+  var output = [];
   for (var i = start; i < end; i += 3) {
     tmp = (uint8[i] << 16 & 16711680) + (uint8[i + 1] << 8 & 65280) + (uint8[i + 2] & 255);
-    output2.push(tripletToBase64(tmp));
+    output.push(tripletToBase64(tmp));
   }
-  return output2.join("");
+  return output.join("");
 }
 function fromByteArray(uint8) {
   var tmp;
@@ -12545,14 +10202,14 @@ function getApps(resolve, reject, filterByAppName = false) {
 const plist = require("simple-plist");
 const getIconFile = (appFileInput) => {
   return new Promise((resolve, reject) => {
-    const plistPath = path$h.join(appFileInput, "Contents", "Info.plist");
+    const plistPath = path.join(appFileInput, "Contents", "Info.plist");
     plist.readFile(plistPath, (err, data) => {
       if (err || !data.CFBundleIconFile) {
         return resolve(
           "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns"
         );
       }
-      const iconFile = path$h.join(
+      const iconFile = path.join(
         appFileInput,
         "Contents",
         "Resources",
@@ -12560,7 +10217,7 @@ const getIconFile = (appFileInput) => {
       );
       const iconFiles = [iconFile, iconFile + ".icns", iconFile + ".tiff"];
       const existedIcon = iconFiles.find((iconFile2) => {
-        return fs$l.existsSync(iconFile2);
+        return fs$1.existsSync(iconFile2);
       });
       resolve(
         existedIcon || "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns"
@@ -12592,18 +10249,18 @@ const getMacApps = {
   },
   app2png
 };
-const icondir$1 = path$h.join(os.tmpdir(), "ProcessIcon");
-const exists$1 = fs$l.existsSync(icondir$1);
+const icondir$1 = path.join(os.tmpdir(), "ProcessIcon");
+const exists$1 = fs$1.existsSync(icondir$1);
 if (!exists$1) {
-  fs$l.mkdirSync(icondir$1);
+  fs$1.mkdirSync(icondir$1);
 }
 const isZhRegex$1 = /[\u4e00-\u9fa5]/;
 async function getAppIcon(appPath2, nativeImage, name) {
   try {
-    const iconpath = path$h.join(icondir$1, `${name}.png`);
-    const iconnone = path$h.join(icondir$1, `${name}.none`);
-    const exists2 = fs$l.existsSync(iconpath);
-    const existsnone = fs$l.existsSync(iconnone);
+    const iconpath = path.join(icondir$1, `${name}.png`);
+    const iconnone = path.join(icondir$1, `${name}.none`);
+    const exists2 = fs$1.existsSync(iconpath);
+    const existsnone = fs$1.existsSync(iconnone);
     if (exists2) return true;
     if (existsnone) return false;
     await getMacApps.app2png(appPath2, iconpath);
@@ -12615,12 +10272,12 @@ async function getAppIcon(appPath2, nativeImage, name) {
 const darwinSearch = async (nativeImage) => {
   let apps = await getMacApps.getApps();
   apps = apps.filter((app) => {
-    const extname = path$h.extname(app.path);
+    const extname = path.extname(app.path);
     return extname === ".app" || extname === ".prefPane";
   });
   for (const app of apps) {
     if (await getAppIcon(app.path, nativeImage, app._name)) {
-      app.icon = "image://" + path$h.join(
+      app.icon = "image://" + path.join(
         os.tmpdir(),
         "ProcessIcon",
         `${encodeURIComponent(app._name)}.png`
@@ -12630,7 +10287,7 @@ const darwinSearch = async (nativeImage) => {
   apps = apps.filter((app) => !!app.icon);
   apps = apps.map((app) => {
     const appName = app.path.split("/").pop();
-    const extname = path$h.extname(appName);
+    const extname = path.extname(appName);
     const appSubStr = appName.split(extname)[0];
     let fileOptions = {
       ...app,
@@ -12652,29 +10309,29 @@ const darwinSearch = async (nativeImage) => {
   });
   return apps;
 };
-const filePath = path$h.resolve(
+const filePath = path.resolve(
   "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs"
 );
-const appData = path$h.join(os.homedir(), "./AppData/Roaming");
-const startMenu = path$h.join(
+const appData = path.join(os.homedir(), "./AppData/Roaming");
+const startMenu = path.join(
   appData,
   "Microsoft\\Windows\\Start Menu\\Programs"
 );
 const fileLists = [];
 const isZhRegex = /[\u4e00-\u9fa5]/;
-const icondir = path$h.join(os.tmpdir(), "ProcessIcon");
-const exists = fs$l.existsSync(icondir);
+const icondir = path.join(os.tmpdir(), "ProcessIcon");
+const exists = fs$1.existsSync(icondir);
 if (!exists) {
-  fs$l.mkdirSync(icondir);
+  fs$1.mkdirSync(icondir);
 }
 const getico = (app) => {
   try {
     const fileIcon = require("extract-file-icon");
-    const buffer2 = fileIcon(app.desc, 32);
-    const iconpath = path$h.join(icondir, `${app.name}.png`);
-    fs$l.exists(iconpath, (exists2) => {
+    const buffer = fileIcon(app.desc, 32);
+    const iconpath = path.join(icondir, `${app.name}.png`);
+    fs$1.exists(iconpath, (exists2) => {
       if (!exists2) {
-        fs$l.writeFile(iconpath, buffer2, "base64", () => {
+        fs$1.writeFile(iconpath, buffer, "base64", () => {
         });
       }
     });
@@ -12683,13 +10340,13 @@ const getico = (app) => {
   }
 };
 function fileDisplay(filePath2) {
-  fs$l.readdir(filePath2, function(err, files) {
+  fs$1.readdir(filePath2, function(err, files) {
     if (err) {
       console.warn(err);
     } else {
       files.forEach(function(filename) {
-        const filedir = path$h.join(filePath2, filename);
-        fs$l.stat(filedir, function(eror, stats) {
+        const filedir = path.join(filePath2, filename);
+        fs$1.stat(filedir, function(eror, stats) {
           if (eror) {
             console.warn("获取文件stats失败");
           } else {
@@ -12705,13 +10362,13 @@ function fileDisplay(filePath2) {
               }
               if (!appDetail.target || appDetail.target.toLowerCase().indexOf("unin") >= 0)
                 return;
-              keyWords.push(path$h.basename(appDetail.target, ".exe"));
+              keyWords.push(path.basename(appDetail.target, ".exe"));
               if (isZhRegex.test(appName)) ;
               else {
                 const firstLatter = appName.split(" ").map((name) => name[0]).join("");
                 keyWords.push(firstLatter);
               }
-              const icon = path$h.join(
+              const icon = path.join(
                 os.tmpdir(),
                 "ProcessIcon",
                 `${encodeURIComponent(appName)}.png`
@@ -12759,9 +10416,9 @@ function dirAppRead(dir, target) {
     return;
   }
   if (files.length !== 0) {
-    for (const file2 of files) {
-      const app = path$h.join(dir, file2);
-      path$h.extname(app) === ".desktop" && target.push(app);
+    for (const file of files) {
+      const app = path.join(dir, file);
+      path.extname(app) === ".desktop" && target.push(app);
     }
   }
 }
@@ -12815,7 +10472,7 @@ function convertEntryFile2Feature(appPath2) {
       window.process.env.HOME + "/.local/share/applications"
     ))
       return null;
-    appPath2 = path$h.join(
+    appPath2 = path.join(
       window.process.env.HOME,
       ".local/share/icons",
       appPath2 + ".png"
@@ -12873,7 +10530,7 @@ function getIcon(filePath2) {
     for (const size of sizes) {
       for (const type2 of types) {
         for (const ext of exts) {
-          let iconPath = path$h.join(
+          let iconPath = path.join(
             "/usr/share/icons",
             theme,
             size,
@@ -12881,7 +10538,7 @@ function getIcon(filePath2) {
             filePath2 + ext
           );
           if (originfs.existsSync(iconPath)) return iconPath;
-          iconPath = path$h.join(
+          iconPath = path.join(
             "/usr/share/icons",
             theme,
             type2,
@@ -12893,7 +10550,7 @@ function getIcon(filePath2) {
       }
     }
   }
-  return originfs.existsSync(path$h.join("/usr/share/pixmaps", filePath2 + ".png")) ? path$h.join("/usr/share/pixmaps", filePath2 + ".png") : emptyIcon;
+  return originfs.existsSync(path.join("/usr/share/pixmaps", filePath2 + ".png")) ? path.join("/usr/share/pixmaps", filePath2 + ".png") : emptyIcon;
 }
 const linuxSearch = () => {
   const apps = [];
@@ -12943,7 +10600,7 @@ function getCopyFiles() {
   }
   if (!Array.isArray(fileInfo)) return null;
   const target = fileInfo.map((p) => {
-    if (!fs$l.existsSync(p)) return false;
+    if (!fs$1.existsSync(p)) return false;
     let info;
     try {
       info = originfs.lstatSync(p);
@@ -12953,13 +10610,14 @@ function getCopyFiles() {
     return {
       isFile: info.isFile(),
       isDirectory: info.isDirectory(),
-      name: path$h.basename(p) || p,
+      name: path.basename(p) || p,
       path: p
     };
   }).filter(Boolean);
   return target.length ? target : null;
 }
 const getLocalConfig = () => require("../initLocalConfig").default;
+const activeStreams = /* @__PURE__ */ new Map();
 class AIService {
   /**
    * 获取 AI 配置（完整，含 API Key）
@@ -13019,7 +10677,78 @@ class AIService {
     return config.providers.find((p) => p.id === providerId) || null;
   }
   /**
-   * 代理 AI 聊天调用
+   * 根据提供商配置创建 AI SDK 模型客户端
+   */
+  createModelClient(provider, model) {
+    switch (provider.type) {
+      case "openai": {
+        const openai$1 = openai.createOpenAI({
+          apiKey: provider.apiKey,
+          baseURL: provider.baseUrl || void 0
+        });
+        return openai$1(model);
+      }
+      case "anthropic": {
+        const anthropic$1 = anthropic.createAnthropic({
+          apiKey: provider.apiKey,
+          baseURL: provider.baseUrl || void 0
+        });
+        return anthropic$1(model);
+      }
+      case "google": {
+        const google$1 = google.createGoogleGenerativeAI({
+          apiKey: provider.apiKey,
+          baseURL: provider.baseUrl || void 0
+        });
+        return google$1(model);
+      }
+      case "azure":
+      case "openai-compatible":
+      default: {
+        if (!provider.baseUrl) {
+          throw new Error(`提供商 ${provider.name} 需要配置 baseUrl`);
+        }
+        const compatible = openaiCompatible.createOpenAICompatible({
+          name: provider.name,
+          apiKey: provider.apiKey,
+          baseURL: provider.baseUrl
+        });
+        return compatible(model);
+      }
+    }
+  }
+  /**
+   * 转换消息格式为 AI SDK 格式
+   */
+  convertMessages(messages) {
+    return messages.map((msg) => {
+      if (typeof msg.content === "string") {
+        return {
+          role: msg.role,
+          content: msg.content
+        };
+      }
+      const parts = msg.content.map((part) => {
+        if (part.type === "text") {
+          return { type: "text", text: part.text };
+        }
+        if (part.type === "image") {
+          return {
+            type: "image",
+            image: part.image,
+            mimeType: part.mimeType
+          };
+        }
+        return part;
+      });
+      return {
+        role: msg.role,
+        content: parts
+      };
+    });
+  }
+  /**
+   * 代理 AI 聊天调用（非流式）
    */
   async chat(request) {
     const provider = await this.getProviderById(request.providerId);
@@ -13035,15 +10764,25 @@ class AIService {
         error: `AI 提供商 ${provider.name} 已禁用`
       };
     }
-    if (!provider.models.includes(request.model)) {
-      return {
-        success: false,
-        error: `模型 ${request.model} 不在提供商 ${provider.name} 的可用模型列表中`
-      };
-    }
     try {
-      const response = await this.callOpenAICompatible(provider, request);
-      return response;
+      const modelClient = this.createModelClient(provider, request.model);
+      const messages = this.convertMessages(request.messages);
+      const result = await ai.generateText({
+        model: modelClient,
+        messages,
+        temperature: request.temperature ?? 0.7,
+        maxOutputTokens: request.maxTokens
+      });
+      const usage = result.usage;
+      return {
+        success: true,
+        content: result.text,
+        usage: usage ? {
+          promptTokens: usage.inputTokens ?? usage.promptTokens ?? 0,
+          completionTokens: usage.outputTokens ?? usage.completionTokens ?? 0,
+          totalTokens: (usage.inputTokens ?? usage.promptTokens ?? 0) + (usage.outputTokens ?? usage.completionTokens ?? 0)
+        } : void 0
+      };
     } catch (error) {
       return {
         success: false,
@@ -13052,45 +10791,10 @@ class AIService {
     }
   }
   /**
-   * OpenAI 兼容 API 调用
-   */
-  async callOpenAICompatible(provider, request) {
-    const url = `${provider.baseUrl.replace(/\/$/, "")}/chat/completions`;
-    const body = {
-      model: request.model,
-      messages: request.messages,
-      temperature: request.temperature ?? 0.7,
-      max_tokens: request.maxTokens,
-      stream: false
-    };
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${provider.apiKey}`
-      },
-      body: JSON.stringify(body)
-    });
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API 请求失败 (${response.status}): ${errorText}`);
-    }
-    const data = await response.json();
-    return {
-      success: true,
-      content: data.choices?.[0]?.message?.content || "",
-      usage: data.usage ? {
-        promptTokens: data.usage.prompt_tokens,
-        completionTokens: data.usage.completion_tokens,
-        totalTokens: data.usage.total_tokens
-      } : void 0
-    };
-  }
-  /**
    * 流式 AI 聊天调用
-   * 返回一个异步生成器
+   * 返回一个异步生成器，支持取消
    */
-  async *chatStream(request) {
+  async *chatStream(request, requestId) {
     const provider = await this.getProviderById(request.providerId);
     if (!provider) {
       yield { type: "error", error: `未找到 AI 提供商: ${request.providerId}` };
@@ -13100,73 +10804,369 @@ class AIService {
       yield { type: "error", error: `AI 提供商 ${provider.name} 已禁用` };
       return;
     }
+    const abortController = new AbortController();
+    if (requestId) {
+      activeStreams.set(requestId, abortController);
+    }
     try {
       yield { type: "start" };
-      const url = `${provider.baseUrl.replace(/\/$/, "")}/chat/completions`;
-      const body = {
-        model: request.model,
-        messages: request.messages,
+      const modelClient = this.createModelClient(provider, request.model);
+      const messages = this.convertMessages(request.messages);
+      const result = ai.streamText({
+        model: modelClient,
+        messages,
         temperature: request.temperature ?? 0.7,
-        max_tokens: request.maxTokens,
-        stream: true
-      };
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${provider.apiKey}`
-        },
-        body: JSON.stringify(body)
+        maxOutputTokens: request.maxTokens,
+        abortSignal: abortController.signal
       });
-      if (!response.ok) {
-        const errorText = await response.text();
+      for await (const textPart of result.textStream) {
+        if (abortController.signal.aborted) {
+          yield { type: "error", error: "请求已取消" };
+          return;
+        }
+        if (textPart) {
+          yield { type: "delta", content: textPart };
+        }
+      }
+      const usage = await result.usage;
+      if (usage) {
+        yield {
+          type: "usage",
+          usage: {
+            promptTokens: usage.inputTokens ?? usage.promptTokens ?? 0,
+            completionTokens: usage.outputTokens ?? usage.completionTokens ?? 0,
+            totalTokens: (usage.inputTokens ?? usage.promptTokens ?? 0) + (usage.outputTokens ?? usage.completionTokens ?? 0)
+          }
+        };
+      }
+      yield { type: "done" };
+    } catch (error) {
+      if (abortController.signal.aborted) {
+        yield { type: "error", error: "请求已取消" };
+      } else {
         yield {
           type: "error",
-          error: `API 请求失败 (${response.status}): ${errorText}`
+          error: error instanceof Error ? error.message : String(error)
         };
-        return;
       }
-      const reader = response.body?.getReader();
-      if (!reader) {
-        yield { type: "error", error: "无法获取响应流" };
-        return;
+    } finally {
+      if (requestId) {
+        activeStreams.delete(requestId);
       }
-      const decoder = new TextDecoder();
-      let buffer2 = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer2 += decoder.decode(value, { stream: true });
-        const lines = buffer2.split("\n");
-        buffer2 = lines.pop() || "";
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed || !trimmed.startsWith("data: ")) continue;
-          const data = trimmed.slice(6);
-          if (data === "[DONE]") {
-            yield { type: "done" };
-            return;
+    }
+  }
+  /**
+   * 取消流式请求
+   */
+  cancelStream(requestId) {
+    const controller = activeStreams.get(requestId);
+    if (controller) {
+      controller.abort();
+      activeStreams.delete(requestId);
+      return true;
+    }
+    return false;
+  }
+}
+const aiService = new AIService();
+class FileSystemService {
+  /**
+   * 读取文件内容
+   */
+  async readFile(filePath2, encoding = "utf-8") {
+    const absolutePath = path.resolve(filePath2);
+    return fs$1.promises.readFile(absolutePath, { encoding });
+  }
+  /**
+   * 写入文件内容（自动创建目录）
+   */
+  async writeFile(filePath2, content) {
+    const absolutePath = path.resolve(filePath2);
+    const dir = path.dirname(absolutePath);
+    await fs$1.promises.mkdir(dir, { recursive: true });
+    await fs$1.promises.writeFile(absolutePath, content, "utf-8");
+  }
+  /**
+   * 删除文件
+   */
+  async deleteFile(filePath2) {
+    const absolutePath = path.resolve(filePath2);
+    await fs$1.promises.unlink(absolutePath);
+  }
+  /**
+   * 重命名/移动文件
+   */
+  async renameFile(oldPath, newPath) {
+    const absoluteOldPath = path.resolve(oldPath);
+    const absoluteNewPath = path.resolve(newPath);
+    const dir = path.dirname(absoluteNewPath);
+    await fs$1.promises.mkdir(dir, { recursive: true });
+    await fs$1.promises.rename(absoluteOldPath, absoluteNewPath);
+  }
+  /**
+   * 检查文件是否存在
+   */
+  async exists(filePath2) {
+    const absolutePath = path.resolve(filePath2);
+    try {
+      await fs$1.promises.access(absolutePath);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  /**
+   * 读取目录内容
+   */
+  async readDir(dirPath) {
+    const absolutePath = path.resolve(dirPath);
+    const entries = await fs$1.promises.readdir(absolutePath, { withFileTypes: true });
+    const result = [];
+    for (const entry of entries) {
+      const entryPath = path.join(absolutePath, entry.name);
+      try {
+        const stats = await fs$1.promises.stat(entryPath);
+        result.push({
+          name: entry.name,
+          path: entryPath,
+          isDirectory: entry.isDirectory(),
+          size: stats.size,
+          modifiedAt: stats.mtime.toISOString()
+        });
+      } catch {
+      }
+    }
+    return result;
+  }
+  /**
+   * 递归读取目录树
+   */
+  async readDirRecursive(dirPath, options = {}) {
+    const { maxDepth = 10, excludePatterns = ["node_modules", ".git", "dist", "build"] } = options;
+    const absolutePath = path.resolve(dirPath);
+    const result = [];
+    const walk = async (currentPath, depth) => {
+      if (depth > maxDepth) return;
+      try {
+        const entries = await fs$1.promises.readdir(currentPath, { withFileTypes: true });
+        for (const entry of entries) {
+          if (excludePatterns.some((pattern) => entry.name === pattern || entry.name.startsWith("."))) {
+            continue;
           }
+          const entryPath = path.join(currentPath, entry.name);
+          const relativePath = path.relative(absolutePath, entryPath);
           try {
-            const parsed = JSON.parse(data);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) {
-              yield { type: "delta", content };
+            const stats = await fs$1.promises.stat(entryPath);
+            result.push({
+              name: entry.name,
+              path: entryPath,
+              relativePath,
+              isDirectory: entry.isDirectory(),
+              size: stats.size
+            });
+            if (entry.isDirectory()) {
+              await walk(entryPath, depth + 1);
             }
           } catch {
           }
         }
+      } catch {
       }
-      yield { type: "done" };
+    };
+    await walk(absolutePath, 0);
+    return result;
+  }
+  /**
+   * 创建目录
+   */
+  async mkdir(dirPath) {
+    const absolutePath = path.resolve(dirPath);
+    await fs$1.promises.mkdir(absolutePath, { recursive: true });
+  }
+  /**
+   * 删除目录（递归）
+   */
+  async rmdir(dirPath) {
+    const absolutePath = path.resolve(dirPath);
+    await fs$1.promises.rm(absolutePath, { recursive: true, force: true });
+  }
+  /**
+   * 获取文件信息
+   */
+  async stat(filePath2) {
+    const absolutePath = path.resolve(filePath2);
+    const stats = await fs$1.promises.stat(absolutePath);
+    return {
+      size: stats.size,
+      isDirectory: stats.isDirectory(),
+      isFile: stats.isFile(),
+      createdAt: stats.birthtime.toISOString(),
+      modifiedAt: stats.mtime.toISOString()
+    };
+  }
+  /**
+   * 复制文件
+   */
+  async copyFile(srcPath, destPath) {
+    const absoluteSrc = path.resolve(srcPath);
+    const absoluteDest = path.resolve(destPath);
+    const dir = path.dirname(absoluteDest);
+    await fs$1.promises.mkdir(dir, { recursive: true });
+    await fs$1.promises.copyFile(absoluteSrc, absoluteDest);
+  }
+}
+const fsService = new FileSystemService();
+class ProcessService {
+  processes = /* @__PURE__ */ new Map();
+  /**
+   * 启动进程
+   */
+  spawn(options) {
+    const { id, command, args = [], cwd, env, maxOutputLines = 100 } = options;
+    if (this.processes.has(id)) {
+      return { success: false, error: `进程 ${id} 已存在` };
+    }
+    try {
+      const childProcess = child_process.spawn(command, args, {
+        cwd: path.resolve(cwd),
+        env: { ...process.env, ...env },
+        shell: true,
+        stdio: ["pipe", "pipe", "pipe"]
+      });
+      const managed = {
+        id,
+        process: childProcess,
+        cwd,
+        command,
+        args,
+        startedAt: (/* @__PURE__ */ new Date()).toISOString(),
+        output: [],
+        maxOutputLines
+      };
+      childProcess.stdout?.on("data", (data) => {
+        const lines = data.toString().split("\n").filter((l) => l.trim());
+        for (const line of lines) {
+          managed.output.push(`[stdout] ${line}`);
+          if (managed.output.length > managed.maxOutputLines) {
+            managed.output.shift();
+          }
+        }
+      });
+      childProcess.stderr?.on("data", (data) => {
+        const lines = data.toString().split("\n").filter((l) => l.trim());
+        for (const line of lines) {
+          managed.output.push(`[stderr] ${line}`);
+          if (managed.output.length > managed.maxOutputLines) {
+            managed.output.shift();
+          }
+        }
+      });
+      childProcess.on("exit", (code2) => {
+        managed.output.push(`[exit] 进程退出，代码: ${code2}`);
+      });
+      childProcess.on("error", (err) => {
+        managed.output.push(`[error] ${err.message}`);
+      });
+      this.processes.set(id, managed);
+      return { success: true };
     } catch (error) {
-      yield {
-        type: "error",
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      };
+    }
+  }
+  /**
+   * 停止进程
+   */
+  kill(id) {
+    const managed = this.processes.get(id);
+    if (!managed) {
+      return { success: false, error: `进程 ${id} 不存在` };
+    }
+    try {
+      if (process.platform === "win32") {
+        child_process.exec(`taskkill /pid ${managed.process.pid} /T /F`);
+      } else {
+        managed.process.kill("SIGTERM");
+        setTimeout(() => {
+          if (!managed.process.killed) {
+            managed.process.kill("SIGKILL");
+          }
+        }, 3e3);
+      }
+      this.processes.delete(id);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      };
+    }
+  }
+  /**
+   * 获取进程状态
+   */
+  getStatus(id) {
+    const managed = this.processes.get(id);
+    if (!managed) {
+      return { exists: false };
+    }
+    return {
+      exists: true,
+      running: !managed.process.killed && managed.process.exitCode === null,
+      pid: managed.process.pid,
+      cwd: managed.cwd,
+      command: `${managed.command} ${managed.args.join(" ")}`,
+      startedAt: managed.startedAt,
+      output: managed.output.slice(-50)
+      // 返回最后 50 行
+    };
+  }
+  /**
+   * 列出所有进程
+   */
+  list() {
+    const result = [];
+    for (const [id, managed] of this.processes) {
+      result.push({
+        id,
+        running: !managed.process.killed && managed.process.exitCode === null,
+        pid: managed.process.pid,
+        command: `${managed.command} ${managed.args.join(" ")}`,
+        startedAt: managed.startedAt
+      });
+    }
+    return result;
+  }
+  /**
+   * 停止所有进程
+   */
+  killAll() {
+    for (const id of this.processes.keys()) {
+      this.kill(id);
+    }
+  }
+  /**
+   * 向进程发送输入
+   */
+  write(id, input) {
+    const managed = this.processes.get(id);
+    if (!managed) {
+      return { success: false, error: `进程 ${id} 不存在` };
+    }
+    try {
+      managed.process.stdin?.write(input);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
         error: error instanceof Error ? error.message : String(error)
       };
     }
   }
 }
-const aiService = new AIService();
+const processService = new ProcessService();
 const winPosition = {
   x: 0,
   y: 0,
@@ -13233,9 +11233,9 @@ const buildDropEffectBuffer = (effect = "copy") => {
     move: 2,
     link: 4
   };
-  const buffer2 = Buffer.alloc(4);
-  buffer2.writeUInt32LE(effectMap[effect], 0);
-  return buffer2;
+  const buffer = Buffer.alloc(4);
+  buffer.writeUInt32LE(effectMap[effect], 0);
+  return buffer;
 };
 const writeWindowsBuffers = (files) => {
   try {
@@ -13262,7 +11262,7 @@ const writeWithClipboardEx = (files) => {
   }
 };
 const copyFilesToWindowsClipboard = (files) => {
-  const normalizedFiles = files.map((filePath2) => path$h.normalize(filePath2)).filter(Boolean);
+  const normalizedFiles = files.map((filePath2) => path.normalize(filePath2)).filter(Boolean);
   if (!normalizedFiles.length) return false;
   if (writeWithClipboardEx(normalizedFiles)) {
     return true;
@@ -13274,7 +11274,7 @@ const sanitizeInputFiles = (input) => {
   return candidates.map((filePath2) => typeof filePath2 === "string" ? filePath2.trim() : "").filter((filePath2) => {
     if (!filePath2) return false;
     try {
-      return fs$l.existsSync(filePath2);
+      return fs$1.existsSync(filePath2);
     } catch {
       return false;
     }
@@ -13351,8 +11351,8 @@ class API extends DBInstance {
       plugin.logo = plugin.logo || `file://${resolveStatic("logo.png")}`;
       plugin.indexPath = `file://${resolveStatic("feature/index.html")}`;
     } else if (!plugin.indexPath) {
-      const pluginPath = path$h.resolve(PLUGIN_INSTALL_DIR, "node_modules", plugin.name);
-      plugin.indexPath = `file://${path$h.join(
+      const pluginPath = path.resolve(PLUGIN_INSTALL_DIR, "node_modules", plugin.name);
+      plugin.indexPath = `file://${path.join(
         pluginPath,
         "./",
         plugin.main || ""
@@ -13633,7 +11633,7 @@ class API extends DBInstance {
     const requestId = Date.now().toString(36) + Math.random().toString(36);
     (async () => {
       try {
-        for await (const chunk of aiService.chatStream(data)) {
+        for await (const chunk of aiService.chatStream(data, requestId)) {
           event.sender.send("ai-stream-event", {
             requestId,
             ...chunk
@@ -13648,6 +11648,168 @@ class API extends DBInstance {
       }
     })();
     return { requestId };
+  }
+  /**
+   * 取消 AI 流式聊天请求
+   */
+  aiChatCancel({ data }) {
+    return aiService.cancelStream(data.requestId);
+  }
+  // ==================== 文件系统 IPC 方法 ====================
+  /**
+   * 读取文件内容
+   */
+  async fsReadFile({ data }) {
+    try {
+      const content = await fsService.readFile(data.path, data.encoding || "utf-8");
+      return { success: true, content };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+  /**
+   * 写入文件内容
+   */
+  async fsWriteFile({ data }) {
+    try {
+      await fsService.writeFile(data.path, data.content);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+  /**
+   * 删除文件
+   */
+  async fsDeleteFile({ data }) {
+    try {
+      await fsService.deleteFile(data.path);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+  /**
+   * 重命名/移动文件
+   */
+  async fsRenameFile({ data }) {
+    try {
+      await fsService.renameFile(data.oldPath, data.newPath);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+  /**
+   * 检查文件是否存在
+   */
+  async fsExists({ data }) {
+    try {
+      const exists2 = await fsService.exists(data.path);
+      return { success: true, exists: exists2 };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+  /**
+   * 读取目录内容
+   */
+  async fsReadDir({ data }) {
+    try {
+      const entries = await fsService.readDir(data.path);
+      return { success: true, entries };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+  /**
+   * 递归读取目录树
+   */
+  async fsReadDirRecursive({ data }) {
+    try {
+      const entries = await fsService.readDirRecursive(data.path, {
+        maxDepth: data.maxDepth,
+        excludePatterns: data.excludePatterns
+      });
+      return { success: true, entries };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+  /**
+   * 创建目录
+   */
+  async fsMkdir({ data }) {
+    try {
+      await fsService.mkdir(data.path);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+  /**
+   * 删除目录
+   */
+  async fsRmdir({ data }) {
+    try {
+      await fsService.rmdir(data.path);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+  /**
+   * 获取文件信息
+   */
+  async fsStat({ data }) {
+    try {
+      const stat = await fsService.stat(data.path);
+      return { success: true, stat };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+  /**
+   * 复制文件
+   */
+  async fsCopyFile({ data }) {
+    try {
+      await fsService.copyFile(data.srcPath, data.destPath);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+  // ==================== 进程管理 IPC 方法 ====================
+  /**
+   * 启动进程
+   */
+  processSpawn({ data }) {
+    return processService.spawn(data);
+  }
+  /**
+   * 停止进程
+   */
+  processKill({ data }) {
+    return processService.kill(data.id);
+  }
+  /**
+   * 获取进程状态
+   */
+  processStatus({ data }) {
+    return processService.getStatus(data.id);
+  }
+  /**
+   * 列出所有进程
+   */
+  processList() {
+    return processService.list();
+  }
+  /**
+   * 向进程发送输入
+   */
+  processWrite({ data }) {
+    return processService.write(data.id, data.input);
   }
 }
 const API$1 = new API();
@@ -13870,17 +12032,17 @@ function uIOhookRegister(callback) {
   });
   uiohookNapi.uIOhook.start();
 }
-const getSearchFiles = (argv = process.argv, cwd2 = process.cwd()) => {
+const getSearchFiles = (argv = process.argv, cwd = process.cwd()) => {
   const files = argv.slice(2);
   let result = [];
   if (files.length > 0) {
     result = files.map((item) => {
-      if (path$h.isAbsolute(item)) {
+      if (path.isAbsolute(item)) {
         return {
           path: item
         };
       } else {
-        const tempPath = path$h.join(cwd2, item);
+        const tempPath = path.join(cwd, item);
         if (fs.existsSync(tempPath)) {
           return {
             path: tempPath
@@ -13901,12 +12063,12 @@ const putFileToRubick = (webContents, files) => {
 const copyFileOutsideOfElectronAsar = function(sourceInAsarArchive, destOutsideAsarArchive) {
   if (fs.existsSync(sourceInAsarArchive)) {
     if (fs.statSync(sourceInAsarArchive).isFile()) {
-      const file2 = destOutsideAsarArchive;
-      const dir = path$h.dirname(file2);
+      const file = destOutsideAsarArchive;
+      const dir = path.dirname(file);
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
-      fs.writeFileSync(file2, fs.readFileSync(sourceInAsarArchive));
+      fs.writeFileSync(file, fs.readFileSync(sourceInAsarArchive));
     } else if (fs.statSync(sourceInAsarArchive).isDirectory()) {
       fs.readdirSync(sourceInAsarArchive).forEach(function(fileOrFolderName) {
         copyFileOutsideOfElectronAsar(
@@ -13928,7 +12090,7 @@ const macBeforeOpen = () => {
     }
   }
 };
-const configPath = path$h.join(PLUGIN_INSTALL_DIR, "./rubick-local-plugin.json");
+const configPath = path.join(PLUGIN_INSTALL_DIR, "./rubick-local-plugin.json");
 let registry;
 let pluginInstance;
 (async () => {
@@ -13955,9 +12117,9 @@ global.LOCAL_PLUGINS = {
   async downloadPlugin(plugin) {
     await pluginInstance.install([plugin.name], { isDev: plugin.isDev });
     if (plugin.isDev) {
-      const pluginPath = path$h.resolve(PLUGIN_INSTALL_DIR, "node_modules", plugin.name);
+      const pluginPath = path.resolve(PLUGIN_INSTALL_DIR, "node_modules", plugin.name);
       const pluginInfo = JSON.parse(
-        fs$l.readFileSync(path$h.join(pluginPath, "./package.json"), "utf8")
+        fs$1.readFileSync(path.join(pluginPath, "./package.json"), "utf8")
       );
       plugin = {
         ...plugin,
@@ -13968,9 +12130,9 @@ global.LOCAL_PLUGINS = {
     return global.LOCAL_PLUGINS.PLUGINS;
   },
   refreshPlugin(plugin) {
-    const pluginPath = path$h.resolve(PLUGIN_INSTALL_DIR, "node_modules", plugin.name);
+    const pluginPath = path.resolve(PLUGIN_INSTALL_DIR, "node_modules", plugin.name);
     const pluginInfo = JSON.parse(
-      fs$l.readFileSync(path$h.join(pluginPath, "./package.json"), "utf8")
+      fs$1.readFileSync(path.join(pluginPath, "./package.json"), "utf8")
     );
     plugin = {
       ...plugin,
@@ -13984,14 +12146,14 @@ global.LOCAL_PLUGINS = {
       return p;
     });
     global.LOCAL_PLUGINS.PLUGINS = currentPlugins;
-    fs$l.writeFileSync(configPath, JSON.stringify(currentPlugins));
+    fs$1.writeFileSync(configPath, JSON.stringify(currentPlugins));
     return global.LOCAL_PLUGINS.PLUGINS;
   },
   getLocalPlugins() {
     try {
       if (!global.LOCAL_PLUGINS.PLUGINS.length) {
         global.LOCAL_PLUGINS.PLUGINS = JSON.parse(
-          fs$l.readFileSync(configPath, "utf-8")
+          fs$1.readFileSync(configPath, "utf-8")
         );
       }
       return global.LOCAL_PLUGINS.PLUGINS;
@@ -14005,7 +12167,7 @@ global.LOCAL_PLUGINS = {
     const filteredPlugins = currentPlugins.filter((p) => p.name !== plugin.name);
     filteredPlugins.unshift(plugin);
     global.LOCAL_PLUGINS.PLUGINS = filteredPlugins;
-    fs$l.writeFileSync(configPath, JSON.stringify(filteredPlugins));
+    fs$1.writeFileSync(configPath, JSON.stringify(filteredPlugins));
   },
   updatePlugin(plugin) {
     global.LOCAL_PLUGINS.PLUGINS = global.LOCAL_PLUGINS.PLUGINS.map(
@@ -14016,14 +12178,14 @@ global.LOCAL_PLUGINS = {
         return origin;
       }
     );
-    fs$l.writeFileSync(configPath, JSON.stringify(global.LOCAL_PLUGINS.PLUGINS));
+    fs$1.writeFileSync(configPath, JSON.stringify(global.LOCAL_PLUGINS.PLUGINS));
   },
   async deletePlugin(plugin) {
     await pluginInstance.uninstall([plugin.name], { isDev: plugin.isDev });
     global.LOCAL_PLUGINS.PLUGINS = global.LOCAL_PLUGINS.PLUGINS.filter(
       (p) => plugin.name !== p.name
     );
-    fs$l.writeFileSync(configPath, JSON.stringify(global.LOCAL_PLUGINS.PLUGINS));
+    fs$1.writeFileSync(configPath, JSON.stringify(global.LOCAL_PLUGINS.PLUGINS));
     return global.LOCAL_PLUGINS.PLUGINS;
   }
 };
@@ -15716,14 +13878,14 @@ const registerSystemPlugin = () => {
   );
   systemPlugins = systemPlugins.map((plugin) => {
     try {
-      const pluginPath = path$h.resolve(
+      const pluginPath = path.resolve(
         PLUGIN_INSTALL_DIR,
         "node_modules",
         plugin.name
       );
       return {
         ...plugin,
-        indexPath: path$h.join(pluginPath, "./", plugin.entry)
+        indexPath: path.join(pluginPath, "./", plugin.entry)
       };
     } catch (e) {
       return false;
@@ -15733,7 +13895,7 @@ const registerSystemPlugin = () => {
     onReady: []
   };
   systemPlugins.forEach((plugin) => {
-    if (fs$l.existsSync(plugin.indexPath)) {
+    if (fs$1.existsSync(plugin.indexPath)) {
       const pluginModule = __non_webpack_require__(plugin.indexPath)();
       hooks.onReady.push(pluginModule.onReady);
     }

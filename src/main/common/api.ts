@@ -27,6 +27,8 @@ import mainInstance from '../index';
 import { runner, detach } from '../browsers';
 import DBInstance from './db';
 import { aiService, AIChatRequest, AIProviderInfo } from './ai';
+import fsService from './fs';
+import processService from './process';
 import getWinPosition from './getWinPosition';
 import path from 'path';
 import commonConst from '@/common/utils/commonConst';
@@ -475,10 +477,10 @@ class API extends DBInstance {
   ) {
     const requestId = Date.now().toString(36) + Math.random().toString(36);
 
-    // 异步处理流式响应
+    // 异步处理流式响应，传入 requestId 以支持取消
     (async () => {
       try {
-        for await (const chunk of aiService.chatStream(data)) {
+        for await (const chunk of aiService.chatStream(data, requestId)) {
           // 通过事件推送给渲染进程
           event.sender.send('ai-stream-event', {
             requestId,
@@ -495,6 +497,193 @@ class API extends DBInstance {
     })();
 
     return { requestId };
+  }
+
+  /**
+   * 取消 AI 流式聊天请求
+   */
+  public aiChatCancel({ data }: { data: { requestId: string } }) {
+    return aiService.cancelStream(data.requestId);
+  }
+
+  // ==================== 文件系统 IPC 方法 ====================
+
+  /**
+   * 读取文件内容
+   */
+  public async fsReadFile({ data }: { data: { path: string; encoding?: string } }) {
+    try {
+      const content = await fsService.readFile(data.path, (data.encoding as BufferEncoding) || 'utf-8');
+      return { success: true, content };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+
+  /**
+   * 写入文件内容
+   */
+  public async fsWriteFile({ data }: { data: { path: string; content: string } }) {
+    try {
+      await fsService.writeFile(data.path, data.content);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+
+  /**
+   * 删除文件
+   */
+  public async fsDeleteFile({ data }: { data: { path: string } }) {
+    try {
+      await fsService.deleteFile(data.path);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+
+  /**
+   * 重命名/移动文件
+   */
+  public async fsRenameFile({ data }: { data: { oldPath: string; newPath: string } }) {
+    try {
+      await fsService.renameFile(data.oldPath, data.newPath);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+
+  /**
+   * 检查文件是否存在
+   */
+  public async fsExists({ data }: { data: { path: string } }) {
+    try {
+      const exists = await fsService.exists(data.path);
+      return { success: true, exists };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+
+  /**
+   * 读取目录内容
+   */
+  public async fsReadDir({ data }: { data: { path: string } }) {
+    try {
+      const entries = await fsService.readDir(data.path);
+      return { success: true, entries };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+
+  /**
+   * 递归读取目录树
+   */
+  public async fsReadDirRecursive({ data }: { data: { path: string; maxDepth?: number; excludePatterns?: string[] } }) {
+    try {
+      const entries = await fsService.readDirRecursive(data.path, {
+        maxDepth: data.maxDepth,
+        excludePatterns: data.excludePatterns,
+      });
+      return { success: true, entries };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+
+  /**
+   * 创建目录
+   */
+  public async fsMkdir({ data }: { data: { path: string } }) {
+    try {
+      await fsService.mkdir(data.path);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+
+  /**
+   * 删除目录
+   */
+  public async fsRmdir({ data }: { data: { path: string } }) {
+    try {
+      await fsService.rmdir(data.path);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+
+  /**
+   * 获取文件信息
+   */
+  public async fsStat({ data }: { data: { path: string } }) {
+    try {
+      const stat = await fsService.stat(data.path);
+      return { success: true, stat };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+
+  /**
+   * 复制文件
+   */
+  public async fsCopyFile({ data }: { data: { srcPath: string; destPath: string } }) {
+    try {
+      await fsService.copyFile(data.srcPath, data.destPath);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+
+  // ==================== 进程管理 IPC 方法 ====================
+
+  /**
+   * 启动进程
+   */
+  public processSpawn({ data }: { data: {
+    id: string;
+    command: string;
+    args?: string[];
+    cwd: string;
+    env?: Record<string, string>;
+  } }) {
+    return processService.spawn(data);
+  }
+
+  /**
+   * 停止进程
+   */
+  public processKill({ data }: { data: { id: string } }) {
+    return processService.kill(data.id);
+  }
+
+  /**
+   * 获取进程状态
+   */
+  public processStatus({ data }: { data: { id: string } }) {
+    return processService.getStatus(data.id);
+  }
+
+  /**
+   * 列出所有进程
+   */
+  public processList() {
+    return processService.list();
+  }
+
+  /**
+   * 向进程发送输入
+   */
+  public processWrite({ data }: { data: { id: string; input: string } }) {
+    return processService.write(data.id, data.input);
   }
 }
 

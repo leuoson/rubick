@@ -14,7 +14,7 @@ import {
 import App from './App.vue';
 import localConfig from './confOp';
 
-import 'ant-design-vue/dist/reset.css';
+import 'ant-design-vue/dist/antd.css';
 
 // 等待 preload 完成后再初始化
 const initApp = () => {

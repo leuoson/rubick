@@ -1,12 +1,22 @@
 /**
+ * AI 提供商类型
+ */
+export type AIProviderType = 
+  | 'openai'
+  | 'anthropic'
+  | 'google'
+  | 'azure'
+  | 'openai-compatible';
+
+/**
  * AI 提供商配置（完整，含 API Key）
  */
 export interface AIProvider {
   id: string;
   name: string;
-  type: 'openai' | 'anthropic' | 'azure' | 'custom';
+  type: AIProviderType;
   apiKey: string;
-  baseUrl: string;
+  baseUrl?: string; // openai-compatible 类型必填
   models: string[];
   enabled: boolean;
 }
@@ -23,11 +33,27 @@ export interface AIProviderInfo {
 }
 
 /**
+ * AI 聊天消息内容部分
+ */
+export interface AIMessageTextPart {
+  type: 'text';
+  text: string;
+}
+
+export interface AIMessageImagePart {
+  type: 'image';
+  image: string; // base64 或 URL
+  mimeType?: string;
+}
+
+export type AIMessagePart = AIMessageTextPart | AIMessageImagePart;
+
+/**
  * AI 聊天消息
  */
 export interface AIChatMessage {
   role: 'system' | 'user' | 'assistant';
-  content: string;
+  content: string | AIMessagePart[];
 }
 
 /**
@@ -60,9 +86,22 @@ export interface AIChatResponse {
  * AI 流式响应事件
  */
 export interface AIStreamEvent {
-  type: 'start' | 'delta' | 'done' | 'error';
+  type: 'start' | 'delta' | 'done' | 'error' | 'usage';
   content?: string;
   error?: string;
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
+}
+
+/**
+ * AI 流式请求控制器
+ */
+export interface AIStreamController {
+  requestId: string;
+  abort: () => void;
 }
 
 /**

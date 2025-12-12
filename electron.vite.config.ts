@@ -24,6 +24,7 @@ export default defineConfig({
           'electron-screenshots',
           'simple-plist',
           'original-fs',
+          'fs-extra',
         ],
       },
     },
