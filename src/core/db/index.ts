@@ -30,6 +30,17 @@ export default class DB {
 
   init(): void {
     fs.existsSync(this.dbpath) || fs.mkdirSync(this.dbpath);
+    // 仅在开发环境清理可能存在的陈旧锁文件（Electron 崩溃或强制退出时可能遗留）
+    if (process.env.NODE_ENV === 'development' || !require('electron').app.isPackaged) {
+      const lockFile = path.join(this.defaultDbName, 'LOCK');
+      if (fs.existsSync(lockFile)) {
+        try {
+          fs.unlinkSync(lockFile);
+        } catch (e) {
+          // 如果无法删除，忽略错误
+        }
+      }
+    }
     this.pouchDB = new PouchDB(this.defaultDbName, { auto_compaction: true });
   }
 

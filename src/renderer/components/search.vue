@@ -71,10 +71,19 @@ const props: any = defineProps({
     type: String,
     default: '',
   },
-  pluginHistory: (() => [])(),
-  currentPlugin: {},
+  pluginHistory: {
+    type: Array,
+    default: () => [],
+  },
+  currentPlugin: {
+    type: Object,
+    default: () => ({}),
+  },
   pluginLoading: Boolean,
-  clipboardFile: (() => [])(),
+  clipboardFile: {
+    type: Array,
+    default: () => [],
+  },
 });
 
 const changeValue = (e) => {

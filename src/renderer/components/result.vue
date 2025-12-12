@@ -65,15 +65,24 @@ const props: any = defineProps({
   },
   options: {
     type: Array,
-    default: (() => [])(),
+    default: () => [],
   },
   currentSelect: {
     type: Number,
     default: 0,
   },
-  currentPlugin: {},
-  pluginHistory: (() => [])(),
-  clipboardFile: (() => [])(),
+  currentPlugin: {
+    type: Object,
+    default: () => ({}),
+  },
+  pluginHistory: {
+    type: Array,
+    default: () => [],
+  },
+  clipboardFile: {
+    type: Array,
+    default: () => [],
+  },
 });
 
 const emit = defineEmits(['choosePlugin', 'setPluginHistory']);

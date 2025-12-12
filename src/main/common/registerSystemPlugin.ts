@@ -33,7 +33,8 @@ export default () => {
 
   systemPlugins.forEach((plugin) => {
     if (fs.existsSync(plugin.indexPath)) {
-      const pluginModule = __non_webpack_require__(plugin.indexPath)();
+      // 使用动态 require 加载系统插件（electron-vite 兼容）
+      const pluginModule = require(plugin.indexPath)();
       // @ts-ignore
       hooks.onReady.push(pluginModule.onReady);
     }
