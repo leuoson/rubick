@@ -13,9 +13,7 @@ import {
   AIChatMessage,
   AIMessagePart,
 } from './types';
-
-// 延迟导入 localConfig，避免模块加载顺序问题
-const getLocalConfig = () => require('../initLocalConfig').default;
+import localConfig from '@/main/common/initLocalConfig';
 
 // 存储活跃的流式请求，用于取消
 const activeStreams = new Map<string, AbortController>();
@@ -29,7 +27,6 @@ class AIService {
    * 获取 AI 配置（完整，含 API Key）
    */
   async getAIConfig(): Promise<AIConfig> {
-    const localConfig = getLocalConfig();
     const config = await localConfig.getConfig();
     return (
       config?.perf?.ai || {
@@ -44,7 +41,6 @@ class AIService {
    * 保存 AI 配置
    */
   async saveAIConfig(aiConfig: AIConfig): Promise<void> {
-    const localConfig = getLocalConfig();
     const config = await localConfig.getConfig();
     await localConfig.setConfig({
       ...config,

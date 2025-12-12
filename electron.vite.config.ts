@@ -30,7 +30,10 @@ export default defineConfig({
     },
   },
   preload: {
-    plugins: [externalizeDepsPlugin()],
+    plugins: [externalizeDepsPlugin({
+      // 外部化 Node.js 内置模块
+      include: ['electron', '@electron/remote', 'os', 'path', 'fs', 'child_process'],
+    })],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, 'src'),
@@ -39,6 +42,16 @@ export default defineConfig({
     build: {
       sourcemap: true,
       outDir: 'out/preload',
+      rollupOptions: {
+        external: [
+          'electron',
+          '@electron/remote',
+          'os',
+          'path',
+          'fs',
+          'child_process',
+        ],
+      },
     },
   },
   renderer: {
