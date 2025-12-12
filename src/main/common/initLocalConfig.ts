@@ -12,22 +12,23 @@ const localConfig = {
       !localConfig.data ||
       localConfig.data.version !== defaultConfig.version
     ) {
-      const data: any = {
+      const doc: any = {
         _id: LOCAL_CONFIG_KEY,
         data: defaultConfig,
       };
-      if (localConfig && localConfig) {
-        data._rev = localConfig._rev;
+      if (localConfig && localConfig._rev) {
+        doc._rev = localConfig._rev;
       }
+      // dbPut 期望 { data: { data: docWithId } } 结构
       await db.dbPut({
-        data: { data },
+        data: { data: doc },
       });
     }
   },
   async getConfig(): Promise<any> {
-    const data: any =
-      (await db.dbGet({ data: { id: LOCAL_CONFIG_KEY } })) || {};
-    return data.data;
+    const data: any = await db.dbGet({ data: { id: LOCAL_CONFIG_KEY } });
+    // 返回存储的配置，如果不存在则返回默认配置
+    return data?.data || defaultConfig;
   },
 
   async setConfig(data) {

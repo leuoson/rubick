@@ -1,6 +1,24 @@
 // @ts-nocheck
 /* eslint-disable @typescript-eslint/no-var-requires */
 const { ipcRenderer, shell } = require('electron');
+
+// 等待主进程准备完成
+const waitForMainProcessReady = async (maxRetries = 50, interval = 100): Promise<boolean> => {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const ready = await ipcRenderer.invoke('main-process-ready');
+      if (ready) return true;
+    } catch (e) {
+      // IPC 错误，继续重试
+    }
+    await new Promise(resolve => setTimeout(resolve, interval));
+  }
+  console.error('[Preload] Main process not ready after max retries');
+  return false;
+};
+
+// 暴露到 window
+(window as any).waitForMainProcessReady = waitForMainProcessReady;
 const os = require('os');
 const path = require('path');
 

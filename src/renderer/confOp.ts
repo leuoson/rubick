@@ -1,7 +1,7 @@
 const LOCAL_CONFIG_KEY = 'rubick-local-config';
 
 const localConfig = {
-  getConfig(): Promise<any> {
+  getConfig(): any {
     const data: any = window.rubick.db.get(LOCAL_CONFIG_KEY) || {};
     return data.data;
   },

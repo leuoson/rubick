@@ -16,6 +16,7 @@ declare module 'lodash.throttle';
 interface Window {
   __static: string;
   rubick: any;
+  waitForMainProcessReady?: () => Promise<boolean>;
   // preload 暴露的 Node.js 功能
   electron: {
     nativeImage: any;

@@ -23,7 +23,7 @@ import { resolveStatic, isDev } from '@/main/common/static';
 import getCopyFiles from '@/common/utils/getCopyFiles';
 import common from '@/common/utils/commonConst';
 
-import mainInstance from '../index';
+import windowManager from './windowManager';
 import { runner, detach } from '../browsers';
 import DBInstance from './db';
 import { aiService, AIChatRequest, AIProviderInfo } from './ai';
@@ -102,7 +102,7 @@ class API extends DBInstance {
         if (this.currentPlugin) {
           this.removePlugin(null, window);
         } else {
-          mainInstance.windowCreator.getWindow().hide();
+          windowManager.hideMainWindow();
         }
       }
 

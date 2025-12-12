@@ -1,5 +1,18 @@
 "use strict";
 const { ipcRenderer, shell } = require("electron");
+const waitForMainProcessReady = async (maxRetries = 50, interval = 100) => {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const ready = await ipcRenderer.invoke("main-process-ready");
+      if (ready) return true;
+    } catch (e) {
+    }
+    await new Promise((resolve) => setTimeout(resolve, interval));
+  }
+  console.error("[Preload] Main process not ready after max retries");
+  return false;
+};
+window.waitForMainProcessReady = waitForMainProcessReady;
 const os = require("os");
 const path = require("path");
 let remote;

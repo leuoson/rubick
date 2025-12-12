@@ -16,8 +16,14 @@ import localConfig from './confOp';
 
 import 'ant-design-vue/dist/antd.css';
 
-// 等待 preload 完成后再初始化
-const initApp = () => {
+// 启动初始化并挂载应用
+const bootstrap = async () => {
+  // 等待主进程准备完成（配置初始化完毕）
+  if (window.waitForMainProcessReady) {
+    await window.waitForMainProcessReady();
+  }
+
+  // 初始化主题配置
   const config: any = localConfig.getConfig();
   if (config?.perf?.custom) {
     ConfigProvider.config({
@@ -27,32 +33,27 @@ const initApp = () => {
 
   if (window.rubick) {
     window.rubick.changeTheme = () => {
-      const config: any = localConfig.getConfig();
-      if (config?.perf?.custom) {
+      const cfg: any = localConfig.getConfig();
+      if (cfg?.perf?.custom) {
         ConfigProvider.config({
-          theme: config.perf.custom,
+          theme: cfg.perf.custom,
         });
       }
     };
   }
+
+  // 挂载 Vue 应用（主进程已准备好，配置可用）
+  createApp(App)
+    .use(Button)
+    .use(List)
+    .use(Spin)
+    .use(Input)
+    .use(Avatar)
+    .use(Tag)
+    .use(Row)
+    .use(Col)
+    .use(Divider)
+    .mount('#app');
 };
 
-// 确保 window.rubick 已加载
-if (window.rubick) {
-  initApp();
-} else {
-  // 如果 preload 还没完成，等待一下
-  setTimeout(initApp, 100);
-}
-
-createApp(App)
-  .use(Button)
-  .use(List)
-  .use(Spin)
-  .use(Input)
-  .use(Avatar)
-  .use(Tag)
-  .use(Row)
-  .use(Col)
-  .use(Divider)
-  .mount('#app');
+bootstrap();

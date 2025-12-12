@@ -1,15 +1,9 @@
 import { LocalDb } from '@/core';
 import { app } from 'electron';
 
-let dbInstance: LocalDb | null = null;
-
-const getDbInstance = () => {
-  if (!dbInstance) {
-    dbInstance = new LocalDb(app.getPath('userData'));
-    dbInstance.init();
-  }
-  return dbInstance;
-};
+// 此模块在 app.whenReady() 后动态导入，app.getPath 可安全调用
+const dbInstance = new LocalDb(app.getPath('userData'));
+dbInstance.init();
 
 export default class DBInstance {
   public currentPlugin: null | any = null;
@@ -18,7 +12,7 @@ export default class DBInstance {
   public async dbPut({ data }) {
     // 记录插件有哪些 dbkey，用于后续的数据同步
     if (this.currentPlugin && this.currentPlugin.name) {
-      let dbInfo: any = await getDbInstance().get(this.DBKEY, this.DB_INFO_KET);
+      let dbInfo: any = await dbInstance.get(this.DBKEY, this.DB_INFO_KET);
       if (!dbInfo) {
         dbInfo = { data: [], _id: this.DB_INFO_KET };
       }
@@ -33,42 +27,42 @@ export default class DBInstance {
           keys: [data.data._id],
         });
       }
-      getDbInstance().put(this.DBKEY, dbInfo);
+      dbInstance.put(this.DBKEY, dbInfo);
     }
-    return getDbInstance().put(this.DBKEY, data.data);
+    return dbInstance.put(this.DBKEY, data.data);
   }
 
   public dbGet({ data }) {
-    return getDbInstance().get(this.DBKEY, data.id);
+    return dbInstance.get(this.DBKEY, data.id);
   }
 
   public dbRemove({ data }) {
-    return getDbInstance().remove(this.DBKEY, data.doc);
+    return dbInstance.remove(this.DBKEY, data.doc);
   }
 
   public dbBulkDocs({ data }) {
-    return getDbInstance().bulkDocs(this.DBKEY, data.docs);
+    return dbInstance.bulkDocs(this.DBKEY, data.docs);
   }
 
   public dbAllDocs({ data }) {
-    return getDbInstance().allDocs(this.DBKEY, data.key);
+    return dbInstance.allDocs(this.DBKEY, data.key);
   }
 
   public dbDump({ data }) {
-    return getDbInstance().dumpDb(data.target);
+    return dbInstance.dumpDb(data.target);
   }
 
   public dbImport({ data }) {
-    return getDbInstance().importDb(data.target);
+    return dbInstance.importDb(data.target);
   }
 
   public dbPostAttachment({ data }) {
     const { docId, attachment, type } = data;
-    return getDbInstance().postAttachment(this.DBKEY, docId, attachment, type);
+    return dbInstance.postAttachment(this.DBKEY, docId, attachment, type);
   }
 
   public dbGetAttachment({ data }) {
-    return getDbInstance().getAttachment(this.DBKEY, data.docId);
+    return dbInstance.getAttachment(this.DBKEY, data.docId);
   }
 
   public async dbGetAttachmentType({ data }) {
