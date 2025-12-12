@@ -1,92 +1,62 @@
 <template>
   <div class="ai-settings">
+    <!-- 添加供应商按钮 -->
+    <a-button type="primary" class="add-btn-top" @click="showAddModal">
+      <PlusOutlined />
+      {{ $t('feature.settings.ai.addProvider') }}
+    </a-button>
+
+    <!-- 已配置的供应商列表 -->
     <div class="setting-item">
       <div class="title">{{ $t('feature.settings.ai.providers') }}</div>
-      <div class="provider-list">
-        <a-card
+      <div class="provider-list" v-if="providers.length > 0">
+        <div
           v-for="(provider, index) in providers"
           :key="provider.id"
-          class="provider-card"
-          size="small"
+          class="provider-item"
+          :class="{ 'is-default': defaultProviderId === provider.id }"
+          @click="selectProvider(provider)"
         >
-          <template #title>
-            <div class="provider-header">
-              <a-switch
-                v-model:checked="provider.enabled"
-                size="small"
-                @change="saveConfig"
+          <div class="provider-main">
+            <div class="provider-left">
+              <a-checkbox
+                :checked="defaultProviderId === provider.id"
+                @click.stop
+                @change="setDefaultProvider(provider.id)"
               />
               <span class="provider-name">{{ provider.name }}</span>
-              <a-tag :color="getTypeColor(provider.type)">{{ provider.type }}</a-tag>
+              <a-tag :color="getTypeColor(provider.type)" size="small">{{ provider.type }}</a-tag>
+              <a-tag v-if="!provider.enabled" color="default" size="small">{{ $t('feature.settings.ai.disabled') }}</a-tag>
             </div>
-          </template>
-          <template #extra>
-            <a-space>
-              <a-button type="text" size="small" @click="editProvider(index)">
+            <div class="provider-actions">
+              <a-button type="text" size="small" @click.stop="editProvider(index)">
                 <EditOutlined />
               </a-button>
-              <a-popconfirm
-                :title="$t('feature.settings.ai.deleteConfirm')"
-                @confirm="deleteProvider(index)"
-              >
-                <a-button type="text" size="small" danger>
-                  <DeleteOutlined />
-                </a-button>
-              </a-popconfirm>
-            </a-space>
-          </template>
-          <div class="provider-info">
-            <div class="info-row">
-              <span class="label">Base URL:</span>
-              <span class="value">{{ provider.baseUrl }}</span>
-            </div>
-            <div class="info-row">
-              <span class="label">API Key:</span>
-              <span class="value">{{ maskApiKey(provider.apiKey) }}</span>
-            </div>
-            <div class="info-row">
-              <span class="label">{{ $t('feature.settings.ai.models') }}:</span>
-              <div class="models-list">
-                <a-tag v-for="model in provider.models" :key="model" size="small">
-                  {{ model }}
-                </a-tag>
-              </div>
+              <a-button type="text" size="small" danger @click.stop="confirmDelete(index)">
+                <DeleteOutlined />
+              </a-button>
             </div>
           </div>
-        </a-card>
-
-        <a-button type="dashed" class="add-btn" block @click="showAddModal">
-          <PlusOutlined />
-          {{ $t('feature.settings.ai.addProvider') }}
-        </a-button>
+          <!-- 模型选择（当选中为默认时显示） -->
+          <div class="model-selector" v-if="defaultProviderId === provider.id">
+            <span class="model-label">{{ $t('feature.settings.ai.defaultModel') }}:</span>
+            <a-select
+              v-model:value="defaultModel"
+              size="small"
+              style="width: 200px"
+              :options="provider.models.map(m => ({ value: m, label: m }))"
+              @change="saveConfig"
+              @click.stop
+            />
+          </div>
+        </div>
       </div>
-    </div>
-
-    <div class="setting-item">
-      <div class="title">{{ $t('feature.settings.ai.defaultSettings') }}</div>
-      <div class="settings-item-li">
-        <div class="label">{{ $t('feature.settings.ai.defaultProvider') }}</div>
-        <a-select
-          v-model:value="defaultProviderId"
-          style="width: 240px"
-          :options="providerOptions"
-          @change="saveConfig"
-        />
-      </div>
-      <div class="settings-item-li">
-        <div class="label">{{ $t('feature.settings.ai.defaultModel') }}</div>
-        <a-select
-          v-model:value="defaultModel"
-          style="width: 240px"
-          :options="modelOptions"
-          @change="saveConfig"
-        />
-      </div>
+      <a-empty v-else :description="$t('feature.settings.ai.noProviders')" />
     </div>
 
     <!-- Add/Edit Provider Modal -->
     <a-modal
-      v-model:open="modalVisible"
+      v-model:visible="modalVisible"
       :title="editingIndex >= 0 ? $t('feature.settings.ai.editProvider') : $t('feature.settings.ai.addProvider')"
       @ok="handleModalOk"
       @cancel="handleModalCancel"
@@ -101,17 +71,36 @@
           <a-select v-model:value="formState.type" @change="onTypeChange">
             <a-select-option value="openai">OpenAI</a-select-option>
             <a-select-option value="anthropic">Anthropic</a-select-option>
+            <a-select-option value="google">Google AI</a-select-option>
             <a-select-option value="azure">Azure OpenAI</a-select-option>
-            <a-select-option value="custom">Custom</a-select-option>
+            <a-select-option value="deepseek">DeepSeek</a-select-option>
+            <a-select-option value="openrouter">OpenRouter</a-select-option>
+            <a-select-option value="xai">xAI (Grok)</a-select-option>
+            <a-select-option value="ollama">Ollama (本地)</a-select-option>
+            <a-select-option value="lmstudio">LM Studio (本地)</a-select-option>
+            <a-select-option value="custom">自定义</a-select-option>
           </a-select>
         </a-form-item>
 
         <a-form-item label="Base URL" required>
           <a-input v-model:value="formState.baseUrl" placeholder="https://api.openai.com/v1" />
+          <template #extra v-if="selectedPreset?.websiteUrl">
+            <a :href="selectedPreset.websiteUrl" target="_blank" rel="noopener">
+              {{ $t('feature.settings.ai.getApiKey') }} →
+            </a>
+          </template>
         </a-form-item>
 
-        <a-form-item label="API Key" required>
-          <a-input-password v-model:value="formState.apiKey" placeholder="sk-..." />
+        <!-- Azure 特殊配置 -->
+        <a-form-item v-if="formState.type === 'azure'" :label="$t('feature.settings.ai.azureResourceName')" required>
+          <a-input v-model:value="formState.resourceName" placeholder="your-resource-name" />
+          <template #extra>
+            {{ $t('feature.settings.ai.azureResourceNameTip') }}
+          </template>
+        </a-form-item>
+
+        <a-form-item label="API Key" :required="!isLocalProvider">
+          <a-input-password v-model:value="formState.apiKey" :placeholder="isLocalProvider ? $t('feature.settings.ai.localNoApiKey') : 'sk-...'" />
         </a-form-item>
 
         <a-form-item :label="$t('feature.settings.ai.models')">
@@ -133,6 +122,7 @@ import { message } from 'ant-design-vue';
 import { useI18n } from 'vue-i18n';
 import localConfig from '@/confOp';
 import debounce from 'lodash.debounce';
+import { ALL_PROVIDERS, getProviderPreset } from '@/assets/ai-providers';
 
 const { t } = useI18n();
 
@@ -151,37 +141,68 @@ const formState = reactive({
   baseUrl: 'https://api.openai.com/v1',
   models: [],
   enabled: true,
+  resourceName: '', // Azure
+});
+
+// 计算可用的预设供应商（排除已添加的）
+const availablePresets = computed(() => {
+  const addedIds = providers.value.map(p => p.id);
+  return ALL_PROVIDERS.filter(p => !addedIds.includes(p.id));
+});
+
+// 当前选中的预设供应商
+const selectedPreset = computed(() => {
+  return getProviderPreset(formState.type) || ALL_PROVIDERS.find(p => p.type === formState.type);
+});
+
+// 是否是本地供应商
+const isLocalProvider = computed(() => {
+  return formState.type === 'ollama' || formState.type === 'lmstudio';
 });
 
 // 初始化加载配置
 const loadConfig = () => {
+  console.log('[AI Settings] loadConfig called');
   const config = localConfig.getConfig();
+  console.log('[AI Settings] loadConfig - raw config:', config);
+  console.log('[AI Settings] loadConfig - config.perf:', config?.perf);
+  console.log('[AI Settings] loadConfig - config.perf.ai:', config?.perf?.ai);
   const aiConfig = config?.perf?.ai || {
     providers: [],
     defaultProviderId: '',
     defaultModel: '',
   };
+  console.log('[AI Settings] loadConfig - aiConfig:', aiConfig);
   providers.value = aiConfig.providers || [];
   defaultProviderId.value = aiConfig.defaultProviderId || '';
   defaultModel.value = aiConfig.defaultModel || '';
+  console.log('[AI Settings] loadConfig - loaded providers:', providers.value);
 };
 
 loadConfig();
 
 // 保存配置
 const saveConfig = debounce(() => {
-  const config = localConfig.getConfig();
-  localConfig.setConfig({
-    perf: {
-      ...config.perf,
-      ai: {
-        providers: providers.value,
-        defaultProviderId: defaultProviderId.value,
-        defaultModel: defaultModel.value,
-      },
-    },
-  });
-  message.success(t('feature.settings.ai.saved'));
+  const { perf } = localConfig.getConfig();
+  console.log('[AI Settings] Before save - perf:', perf);
+  console.log('[AI Settings] Saving providers:', JSON.stringify(providers.value));
+  
+  // 使用与其他设置页面相同的保存模式
+  localConfig.setConfig(
+    JSON.parse(
+      JSON.stringify({
+        perf: {
+          ...perf,
+          ai: {
+            providers: providers.value,
+            defaultProviderId: defaultProviderId.value,
+            defaultModel: defaultModel.value,
+          },
+        },
+      })
+    )
+  );
+  
 }, 500);
 
 // Computed
@@ -208,33 +229,43 @@ const getTypeColor = (type) => {
   const colors = {
     openai: 'green',
     anthropic: 'orange',
-    azure: 'blue',
-    custom: 'purple',
+    google: 'blue',
+    azure: 'cyan',
+    openrouter: 'purple',
+    xai: 'magenta',
+    ollama: 'geekblue',
+    lmstudio: 'geekblue',
+    custom: 'default',
   };
   return colors[type] || 'default';
 };
 
 const maskApiKey = (apiKey) => {
-  if (!apiKey) return '';
+  if (!apiKey) return '未设置';
   if (apiKey.length <= 8) return '********';
   return apiKey.slice(0, 4) + '...' + apiKey.slice(-4);
 };
 
 const onTypeChange = (type) => {
-  const baseUrls = {
-    openai: 'https://api.openai.com/v1',
-    anthropic: 'https://api.anthropic.com/v1',
-    azure: 'https://YOUR_RESOURCE.openai.azure.com',
-    custom: '',
-  };
-  const defaultModels = {
-    openai: ['gpt-4', 'gpt-4-turbo', 'gpt-3.5-turbo'],
-    anthropic: ['claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku'],
-    azure: ['gpt-4', 'gpt-35-turbo'],
-    custom: [],
-  };
-  formState.baseUrl = baseUrls[type] || '';
-  formState.models = defaultModels[type] || [];
+  // 自定义类型不填充默认值
+  if (type === 'custom') {
+    formState.baseUrl = '';
+    formState.models = [];
+    formState.name = '';
+    return;
+  }
+  
+  const preset = getProviderPreset(type) || ALL_PROVIDERS.find(p => p.type === type);
+  if (preset) {
+    formState.baseUrl = preset.baseUrl;
+    formState.models = [...preset.models];
+    if (!formState.name) {
+      formState.name = preset.name;
+    }
+  } else {
+    formState.baseUrl = '';
+    formState.models = [];
+  }
 };
 
 const resetForm = () => {
@@ -243,14 +274,35 @@ const resetForm = () => {
   formState.type = 'openai';
   formState.apiKey = '';
   formState.baseUrl = 'https://api.openai.com/v1';
-  formState.models = ['gpt-4', 'gpt-4-turbo', 'gpt-3.5-turbo'];
+  formState.models = ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'];
   formState.enabled = true;
+  formState.resourceName = '';
+};
+
+// 快速添加预设供应商
+const quickAddProvider = (preset) => {
+  console.log('[AI Settings] quickAddProvider called with:', preset.id, preset.name);
+  editingIndex.value = -1;
+  formState.id = preset.id;
+  formState.name = preset.name;
+  formState.type = preset.type;
+  formState.baseUrl = preset.baseUrl;
+  formState.models = [...preset.models];
+  formState.apiKey = '';
+  formState.enabled = true;
+  formState.resourceName = '';
+  console.log('[AI Settings] Setting modalVisible to true');
+  modalVisible.value = true;
+  console.log('[AI Settings] modalVisible is now:', modalVisible.value);
 };
 
 const showAddModal = () => {
+  console.log('[AI Settings] showAddModal called');
   editingIndex.value = -1;
   resetForm();
+  console.log('[AI Settings] Setting modalVisible to true');
   modalVisible.value = true;
+  console.log('[AI Settings] modalVisible is now:', modalVisible.value);
 };
 
 const editProvider = (index) => {
@@ -267,7 +319,9 @@ const editProvider = (index) => {
 };
 
 const deleteProvider = (index) => {
+  console.log('[AI Settings] deleteProvider called with index:', index);
   const provider = providers.value[index];
+  console.log('[AI Settings] Deleting provider:', provider?.name);
   providers.value.splice(index, 1);
   // 如果删除的是默认提供商，清空默认设置
   if (defaultProviderId.value === provider.id) {
@@ -275,23 +329,47 @@ const deleteProvider = (index) => {
     defaultModel.value = '';
   }
   saveConfig();
+  console.log('[AI Settings] Provider deleted, remaining:', providers.value.length);
+};
+
+// 确认删除
+const confirmDelete = (index) => {
+  const provider = providers.value[index];
+  if (confirm(t('feature.settings.ai.deleteConfirmMsg', { name: provider.name }))) {
+    deleteProvider(index);
+  }
 };
 
 const handleModalOk = () => {
-  // 验证
-  if (!formState.name || !formState.apiKey || !formState.baseUrl) {
+  // 验证（本地供应商不需要 API Key）
+  if (!formState.name || !formState.baseUrl) {
     message.error(t('feature.settings.ai.fillRequired'));
     return;
   }
+  if (!isLocalProvider.value && !formState.apiKey) {
+    message.error(t('feature.settings.ai.fillRequired'));
+    return;
+  }
+  // Azure 需要 resourceName
+  if (formState.type === 'azure' && !formState.resourceName) {
+    message.error('Azure 需要填写 Resource Name');
+    return;
+  }
+
+  // 自动生成唯一标识：类型_时间戳_随机数
+  const generateId = () => `${formState.type}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
 
   const providerData = {
-    id: formState.id || `provider_${Date.now()}`,
+    id: formState.id || generateId(),
     name: formState.name,
     type: formState.type,
     apiKey: formState.apiKey,
-    baseUrl: formState.baseUrl,
+    baseUrl: formState.type === 'azure' 
+      ? `https://${formState.resourceName}.openai.azure.com`
+      : formState.baseUrl,
     models: formState.models,
     enabled: formState.enabled,
+    resourceName: formState.resourceName || undefined,
   };
 
   if (editingIndex.value >= 0) {
@@ -310,6 +388,23 @@ const handleModalCancel = () => {
   modalVisible.value = false;
 };
 
+// 设置默认供应商
+const setDefaultProvider = (providerId) => {
+  defaultProviderId.value = providerId;
+  // 自动选择第一个模型
+  const provider = providers.value.find(p => p.id === providerId);
+  if (provider && provider.models.length > 0) {
+    defaultModel.value = provider.models[0];
+  }
+  saveConfig();
+};
+
+// 点击供应商行
+const selectProvider = (provider) => {
+  // 点击行时设为默认
+  setDefaultProvider(provider.id);
+};
+
 // 监听默认提供商变化，自动选择第一个模型
 watch(defaultProviderId, (newId) => {
   const provider = providers.value.find(p => p.id === newId);
@@ -325,51 +420,69 @@ watch(defaultProviderId, (newId) => {
 
 <style lang="less" scoped>
 .ai-settings {
+  .add-btn-top {
+    margin-bottom: 16px;
+  }
+
   .provider-list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
     margin-top: 12px;
   }
 
-  .provider-card {
-    .provider-header {
+  .provider-item {
+    padding: 12px 16px;
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      border-color: #1890ff;
+      background: #fafafa;
+    }
+
+    &.is-default {
+      border-color: #1890ff;
+      background: #e6f7ff;
+    }
+
+    .provider-main {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .provider-left {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 12px;
 
       .provider-name {
         font-weight: 500;
+        font-size: 14px;
       }
     }
 
-    .provider-info {
-      .info-row {
-        display: flex;
-        margin-bottom: 8px;
+    .provider-actions {
+      display: flex;
+      gap: 4px;
+    }
 
-        .label {
-          width: 80px;
-          color: #666;
-          flex-shrink: 0;
-        }
+    .model-selector {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px dashed #e8e8e8;
+      display: flex;
+      align-items: center;
+      gap: 12px;
 
-        .value {
-          color: #333;
-          word-break: break-all;
-        }
-
-        .models-list {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 4px;
-        }
+      .model-label {
+        color: #666;
+        font-size: 13px;
       }
     }
-  }
-
-  .add-btn {
-    margin-top: 8px;
   }
 
   .setting-item {
@@ -381,17 +494,6 @@ watch(defaultProviderId, (newId) => {
       margin-bottom: 12px;
       padding-bottom: 8px;
       border-bottom: 1px solid #eee;
-    }
-  }
-
-  .settings-item-li {
-    display: flex;
-    align-items: center;
-    padding: 8px 0;
-
-    .label {
-      width: 120px;
-      color: #666;
     }
   }
 }

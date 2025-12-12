@@ -28,6 +28,9 @@ class AIService {
    */
   async getAIConfig(): Promise<AIConfig> {
     const config = await localConfig.getConfig();
+    console.log('[AI Service] getAIConfig - full config:', JSON.stringify(config, null, 2));
+    console.log('[AI Service] getAIConfig - perf:', config?.perf);
+    console.log('[AI Service] getAIConfig - ai:', config?.perf?.ai);
     return (
       config?.perf?.ai || {
         providers: [],

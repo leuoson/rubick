@@ -21,7 +21,7 @@ const getPluginPreloadPath = (plugin, pluginIndexPath) => {
   if (!preload) return;
   if (isDev()) {
     if (name === 'rubick-system-feature') {
-      return resolveStatic('feature/public/preload.js');
+      return resolveStatic('feature/preload.js');
     }
     if (tplPath) {
       return path.resolve(getRelativePath(indexPath), `./`, preload);
