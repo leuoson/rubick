@@ -17,7 +17,15 @@ export default () => {
     // 确保 @electron/remote 在 app ready 后初始化
     if (!remoteInitialized) {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
-      require('@electron/remote/main').initialize();
+      const remote = require('@electron/remote/main');
+      remote.initialize();
+      
+      // 为所有新创建的 webContents (包括 webview) 启用 remote
+      app.on('web-contents-created', (event, contents) => {
+        // 对所有类型的 webContents 启用 remote（包括 webview）
+        remote.enable(contents);
+      });
+      
       remoteInitialized = true;
     }
     createWindow();

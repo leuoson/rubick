@@ -29,6 +29,7 @@ import DBInstance from './db';
 import { aiService, AIChatRequest, AIProviderInfo } from './ai';
 import fsService from './fs';
 import processService from './process';
+import esbuildService from './esbuild/service';
 import getWinPosition from './getWinPosition';
 import path from 'path';
 import commonConst from '@/common/utils/commonConst';
@@ -684,6 +685,36 @@ class API extends DBInstance {
    */
   public processWrite({ data }: { data: { id: string; input: string } }) {
     return processService.write(data.id, data.input);
+  }
+
+  // ==================== Esbuild IPC 方法 ====================
+
+  /**
+   * 编译项目
+   */
+  public async esbuildBuild({ data }: { data: { projectPath: string; entryPoint?: string; outdir?: string } }) {
+    return esbuildService.build(data);
+  }
+
+  /**
+   * 启动开发服务器
+   */
+  public async esbuildServe({ data }: { data: { projectPath: string; port?: number } }) {
+    return esbuildService.serve(data);
+  }
+
+  /**
+   * 停止开发服务器
+   */
+  public async esbuildStopServer({ data }: { data: { projectPath: string } }) {
+    return esbuildService.stopServer(data.projectPath);
+  }
+
+  /**
+   * 获取所有运行中的服务器
+   */
+  public esbuildListServers() {
+    return esbuildService.listServers();
   }
 }
 

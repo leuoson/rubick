@@ -29,6 +29,7 @@
     "core-js": "^3.6.5",
     "cross-spawn": "^7.0.3",
     "electron-updater": "^4.6.5",
+    "esbuild-plugin-vue3": "^0.5.1",
     "extract-file-icon": "^0.3.2",
     "fix-path": "^3.0.0",
     "fs-extra": "^11.3.2",

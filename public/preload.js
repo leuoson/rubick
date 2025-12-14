@@ -207,6 +207,169 @@ window.rubick = {
     return ipcSend('removePlugin');
   },
 
+  // ==================== 文件系统 API ====================
+  fs: {
+    /**
+     * 读取文件内容
+     * @param {string} filePath - 文件路径
+     * @param {string} [encoding='utf-8'] - 编码
+     * @returns {{success: boolean, content?: string, error?: string}}
+     */
+    readFile: (filePath, encoding = 'utf-8') => ipcSendSync('fsReadFile', { path: filePath, encoding }),
+
+    /**
+     * 写入文件内容（自动创建目录）
+     * @param {string} filePath - 文件路径
+     * @param {string} content - 文件内容
+     * @returns {{success: boolean, error?: string}}
+     */
+    writeFile: (filePath, content) => ipcSendSync('fsWriteFile', { path: filePath, content }),
+
+    /**
+     * 删除文件
+     * @param {string} filePath - 文件路径
+     * @returns {{success: boolean, error?: string}}
+     */
+    deleteFile: (filePath) => ipcSendSync('fsDeleteFile', { path: filePath }),
+
+    /**
+     * 重命名/移动文件
+     * @param {string} oldPath - 原路径
+     * @param {string} newPath - 新路径
+     * @returns {{success: boolean, error?: string}}
+     */
+    renameFile: (oldPath, newPath) => ipcSendSync('fsRenameFile', { oldPath, newPath }),
+
+    /**
+     * 检查文件是否存在
+     * @param {string} filePath - 文件路径
+     * @returns {{success: boolean, exists?: boolean, error?: string}}
+     */
+    exists: (filePath) => ipcSendSync('fsExists', { path: filePath }),
+
+    /**
+     * 读取目录内容
+     * @param {string} dirPath - 目录路径
+     * @returns {{success: boolean, entries?: Array, error?: string}}
+     */
+    readDir: (dirPath) => ipcSendSync('fsReadDir', { path: dirPath }),
+
+    /**
+     * 递归读取目录树
+     * @param {string} dirPath - 目录路径
+     * @param {Object} [options] - 选项
+     * @returns {{success: boolean, entries?: Array, error?: string}}
+     */
+    readDirRecursive: (dirPath, options = {}) => ipcSendSync('fsReadDirRecursive', { path: dirPath, ...options }),
+
+    /**
+     * 创建目录
+     * @param {string} dirPath - 目录路径
+     * @returns {{success: boolean, error?: string}}
+     */
+    mkdir: (dirPath) => ipcSendSync('fsMkdir', { path: dirPath }),
+
+    /**
+     * 删除目录（递归）
+     * @param {string} dirPath - 目录路径
+     * @returns {{success: boolean, error?: string}}
+     */
+    rmdir: (dirPath) => ipcSendSync('fsRmdir', { path: dirPath }),
+
+    /**
+     * 获取文件信息
+     * @param {string} filePath - 文件路径
+     * @returns {{success: boolean, stat?: Object, error?: string}}
+     */
+    stat: (filePath) => ipcSendSync('fsStat', { path: filePath }),
+
+    /**
+     * 复制文件
+     * @param {string} srcPath - 源路径
+     * @param {string} destPath - 目标路径
+     * @returns {{success: boolean, error?: string}}
+     */
+    copyFile: (srcPath, destPath) => ipcSendSync('fsCopyFile', { srcPath, destPath }),
+  },
+
+  // ==================== 进程管理 API ====================
+  process: {
+    /**
+     * 启动进程（如开发服务器）
+     * @param {Object} options
+     * @param {string} options.id - 进程唯一 ID
+     * @param {string} options.command - 命令
+     * @param {string[]} [options.args] - 参数
+     * @param {string} options.cwd - 工作目录
+     * @param {Object} [options.env] - 环境变量
+     * @returns {{success: boolean, error?: string}}
+     */
+    spawn: (options) => ipcSendSync('processSpawn', options),
+
+    /**
+     * 停止进程
+     * @param {string} id - 进程 ID
+     * @returns {{success: boolean, error?: string}}
+     */
+    kill: (id) => ipcSendSync('processKill', { id }),
+
+    /**
+     * 获取进程状态
+     * @param {string} id - 进程 ID
+     * @returns {{exists: boolean, running?: boolean, pid?: number, output?: string[]}}
+     */
+    getStatus: (id) => ipcSendSync('processGetStatus', { id }),
+
+    /**
+     * 列出所有托管进程
+     * @returns {Array<{id: string, running: boolean, command: string}>}
+     */
+    list: () => ipcSendSync('processList'),
+
+    /**
+     * 向进程发送输入
+     * @param {string} id - 进程 ID
+     * @param {string} input - 输入内容
+     * @returns {{success: boolean, error?: string}}
+     */
+    write: (id, input) => ipcSendSync('processWrite', { id, input }),
+  },
+
+  // ==================== Esbuild API ====================
+  esbuild: {
+    /**
+     * 编译项目
+     * @param {Object} options
+     * @param {string} options.projectPath - 项目路径
+     * @param {string} [options.entryPoint] - 入口文件
+     * @param {string} [options.outdir] - 输出目录
+     * @returns {{success: boolean, outputFiles?: Array, error?: string}}
+     */
+    build: (options) => ipcSendSync('esbuildBuild', options),
+
+    /**
+     * 启动开发服务器
+     * @param {Object} options
+     * @param {string} options.projectPath - 项目路径
+     * @param {number} [options.port] - 端口号
+     * @returns {{success: boolean, url?: string, port?: number, error?: string}}
+     */
+    serve: (options) => ipcSendSync('esbuildServe', options),
+
+    /**
+     * 停止开发服务器
+     * @param {string} projectPath - 项目路径
+     * @returns {{success: boolean, error?: string}}
+     */
+    stopServer: (projectPath) => ipcSendSync('esbuildStopServer', { projectPath }),
+
+    /**
+     * 获取所有运行中的服务器
+     * @returns {Array<{projectPath: string, port: number}>}
+     */
+    listServers: () => ipcSendSync('esbuildListServers'),
+  },
+
   // ==================== AI API ====================
   ai: {
     /**
@@ -307,6 +470,69 @@ window.rubick = {
       callback && callback();
     });
     return win;
+  },
+
+  /**
+   * 打开预览窗口 - 用于预览任意本地项目
+   * @param {string} projectPath - 项目路径（绝对路径）
+   * @param {Object} options - 窗口选项
+   * @param {string} options.entry - 入口文件，默认 'index.html'
+   * @param {string} options.title - 窗口标题
+   * @param {number} options.width - 窗口宽度
+   * @param {number} options.height - 窗口高度
+   * @param {Function} callback - 加载完成回调
+   * @returns {BrowserWindow}
+   */
+  openPreviewWindow: (projectPath, options = {}, callback) => {
+    const {
+      entry = 'index.html',
+      title = '预览',
+      width = 1024,
+      height = 768,
+    } = options;
+
+    // 规范化路径
+    const normalizedPath = projectPath.replace(/\\/g, '/');
+    const indexPath = `file:///${normalizedPath}/${entry}`.replace(/\/+/g, '/').replace('file:/', 'file:///');
+
+    let previewWin = new BrowserWindow({
+      width,
+      height,
+      useContentSize: true,
+      resizable: true,
+      title,
+      show: false,
+      backgroundColor: nativeTheme.shouldUseDarkColors ? '#1c1c28' : '#fff',
+      webPreferences: {
+        webSecurity: false,
+        backgroundThrottling: false,
+        contextIsolation: false,
+        webviewTag: true,
+        nodeIntegration: true,
+        spellcheck: false,
+        partition: null,
+        preload: path.join(__dirname, 'preload.js'),
+      },
+    });
+
+    previewWin.loadURL(indexPath);
+
+    previewWin.on('closed', () => {
+      previewWin = undefined;
+    });
+
+    previewWin.once('ready-to-show', () => {
+      previewWin.show();
+    });
+
+    previewWin.webContents.on('dom-ready', () => {
+      callback && callback();
+    });
+
+    // 打开开发者工具（方便调试）
+    // previewWin.webContents.openDevTools();
+
+    return previewWin;
   },
 };
 
